@@ -3997,6 +3997,44 @@
             }
         });
 
+        // --- 対戦位置同期 (30Hz送信 + 受信側補間でガクつき解消) ---
+        const enemyNet = { has: false, x: 0, y: 0, z: 0, r: 0 };
+        let netSyncLastSent = 0;
+        const NET_SYNC_INTERVAL = 1000 / 30;
+        function sendGameSync(force) {
+            if (!activeConn || isTrainingMode) return;
+            const now = performance.now();
+            if (!force) {
+                if (now - netSyncLastSent < NET_SYNC_INTERVAL) return;
+                // 送信バッファが詰まっているときは位置情報を間引いて遅延蓄積を防ぐ
+                try {
+                    const dc = activeConn.dataChannel;
+                    if (dc && dc.bufferedAmount > 16384) return;
+                } catch (e) {}
+            }
+            netSyncLastSent = now;
+            try {
+                activeConn.send({ type: "GAME_SYNC", pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, rotY: euler.y, snap: !!force });
+            } catch (e) {}
+        }
+        function updateEnemyInterpolation(dt) {
+            if (!enemyNet.has || !enemyPlayerMesh || isTrainingMode || isNpcBattleMode) return;
+            const m = enemyPlayerMesh;
+            const dx = enemyNet.x - m.position.x, dz = enemyNet.z - m.position.z;
+            if (dx * dx + dz * dz > 100) { // 10m以上離れたらワープ扱い
+                m.position.set(enemyNet.x, enemyNet.y, enemyNet.z);
+                m.rotation.y = enemyNet.r;
+                return;
+            }
+            const k = 1 - Math.exp(-dt * 22);
+            m.position.x += dx * k;
+            m.position.y += (enemyNet.y - m.position.y) * k;
+            m.position.z += dz * k;
+            let dr = enemyNet.r - m.rotation.y;
+            dr = Math.atan2(Math.sin(dr), Math.cos(dr));
+            m.rotation.y += dr * k;
+        }
+
         function startMatching() {
             if (!isMatchmakingTraining || isConnecting || activeConn) return;
             isConnecting = true;
@@ -4317,8 +4355,13 @@
             else if (data.type === "GAME_SYNC") { 
                 if (enemyPlayerMesh) { 
                     enemyPlayerMesh.visible = true;
-                    enemyPlayerMesh.position.set(data.pos.x, Math.max(0, data.pos.y - 2.2 * CHAR_SCALE), data.pos.z); 
-                    enemyPlayerMesh.rotation.y = data.rotY; 
+                    const ty = Math.max(0, data.pos.y - 2.2 * CHAR_SCALE);
+                    if (!enemyNet.has || data.snap) {
+                        enemyPlayerMesh.position.set(data.pos.x, ty, data.pos.z);
+                        enemyPlayerMesh.rotation.y = data.rotY;
+                        enemyNet.has = true;
+                    }
+                    enemyNet.x = data.pos.x; enemyNet.y = ty; enemyNet.z = data.pos.z; enemyNet.r = data.rotY;
                 } 
             }
             else if (data.type === "GAME_SHOOT") {
@@ -8679,9 +8722,7 @@ ${shader.vertexShader}`.replace(
                 enemyPlayerMesh.rotation.set(0, oppRotY, 0);
             }
             if (activeConn && !isTrainingMode) {
-                try {
-                    activeConn.send({ type: "GAME_SYNC", pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, rotY: euler.y });
-                } catch (e) {}
+                enemyNet.has = false; sendGameSync(true);
             }
 
             if (isNpcBattleMode && enemyPlayerMesh) {
@@ -11439,6 +11480,7 @@ const intersects = raycaster.intersectObjects(shootableTargets, true);
             const rawDelta = Math.min((time - prevTime) / 1000, 0.1);
             const timeScale = (isRoundEnding && killcamState.active) ? 0.24 : 1.0;
             const delta = rawDelta * timeScale;
+            updateEnemyInterpolation(rawDelta);
 
             if (playerInjuryState.legTimer > 0 || playerInjuryState.armTimer > 0) {
                 playerInjuryState.legTimer = Math.max(0, playerInjuryState.legTimer - delta);
@@ -12027,9 +12069,7 @@ const intersects = raycaster.intersectObjects(shootableTargets, true);
                 applyMobileAimAssist(delta);
             }
 
-            if (activeConn && !isTrainingMode) {
-                activeConn.send({ type: "GAME_SYNC", pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, rotY: euler.y });
-            }
+            sendGameSync(false);
             renderTacticalMinimap();
             prevTime = time; renderer.render(scene, camera);
         }
