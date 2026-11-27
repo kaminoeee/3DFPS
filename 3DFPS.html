@@ -1,4 +1,4 @@
-<!DOCTYPE html>　
+========================== */<!DOCTYPE html>　
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -3603,6 +3603,7 @@
         // --- モード切替＆UIナビゲーション ---
         function selectLobbyModeUI(mode) {
             selectedLobbyMode = mode;
+            document.getElementById("playActionBtn").innerText = (mode === "FRIEND") ? "参加" : "プレイ！";
             const banner = document.getElementById("modeBanner");
             const title = document.getElementById("modeTitleDisplay");
             const desc = document.getElementById("modeDescDisplay");
@@ -4059,6 +4060,18 @@
 
         const MAX_SCAN_ROOMS = 4;
         let friendCode = null;
+        let friendPeerInLobby = false;
+        function refreshReadyBtn() {
+            if (friendCode) {
+                readyBtn.disabled = !friendPeerInLobby;
+                readyBtn.innerText = friendPeerInLobby ? "プレイ" : "相手の参加待ち…";
+                if (friendPeerInLobby) { enemyStatusInd.innerText = "JOINED"; enemyStatusInd.classList.add("ready"); enemyPlayerCard.classList.add("card-ready"); }
+                myStatusInd.innerText = "JOINED"; myStatusInd.classList.add("ready"); myPlayerCard.classList.add("card-ready");
+            } else {
+                readyBtn.disabled = false;
+                readyBtn.innerText = "READY / 準備完了";
+            }
+        }
         function startMatching() {
             if (!isMatchmakingTraining || isConnecting || activeConn) return;
 
@@ -4325,10 +4338,10 @@
             clearInterval(lobbyTimerInterval);
             clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             amIReady = false; isEnemyReady = false; gameStarted = false;
-            readyBtn.innerText = "READY / 準備完了"; readyBtn.classList.remove("is-ready");
+            refreshReadyBtn(); readyBtn.classList.remove("is-ready");
             myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
             enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
-            enemyPlayerName = "OPPONENT";
+            enemyPlayerName = "OPPONENT"; friendPeerInLobby = false;
             activeConn = conn; screenMatching.classList.add("hidden"); screenLobby.classList.remove("hidden"); matchPerfectEnded = false;
             document.getElementById("lobbyRoomName").innerText = friendCode ? `FRIEND ${friendCode} // ${role}` : `ROOM ${currentRoomNumber} // ${role}`;
             document.getElementById("lobbyMyName").innerText = myPlayerName;
@@ -4363,6 +4376,7 @@
             }, 500);
 
             startLobbyTimer();
+            refreshReadyBtn();
 
             clearInterval(pingIntervalToken);
             pingIntervalToken = setInterval(() => {
@@ -4382,7 +4396,7 @@
             if (isNpcBattleMode || !activeConn || !activeConn.open) { resetToMenu(); return; }
             clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null; clearInterval(nameSyncInterval);
             amIReady = false; isEnemyReady = false; gameStarted = false; matchPerfectEnded = false; isRoundEnding = false;
-            readyBtn.innerText = "READY / 準備完了"; readyBtn.classList.remove("is-ready");
+            refreshReadyBtn(); readyBtn.classList.remove("is-ready");
             myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
             enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
             screenResult.classList.add("hidden"); fullscreenCountdown.classList.add("hidden"); vsOverlay.classList.add("hidden");
@@ -4393,6 +4407,7 @@
             try { activeConn.send({ type: "READY_CHANGE", isReady: false, name: myPlayerName }); } catch (e) {}
             setUIScreen("LOBBY");
             startLobbyTimer();
+            refreshReadyBtn();
         }
         function handleOpponentDisconnect() {
             if (matchPerfectEnded || isTrainingMode) return;
@@ -4437,7 +4452,7 @@
             amIReady = false; isEnemyReady = false; gameStarted = false; isConnecting = false; lobbyTimeoutCount = 10; currentRoomNumber = 1; matchPerfectEnded = false; isTrainingMode = false; isNpcBattleMode = false; enemyPlayerName = "OPPONENT";
             myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
             enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
-            readyBtn.innerText = "READY / 準備完了"; readyBtn.classList.remove("is-ready");
+            refreshReadyBtn(); readyBtn.classList.remove("is-ready");
             lobbyTimerEl.innerText = "AUTO START: 10s"; fullscreenCountdown.classList.add("hidden"); document.getElementById("lobbyEnemyName").innerText = "CONNECTING...";
             cleanup3DGame(); screenResult.classList.add("hidden"); crosshair.classList.add("hidden"); hudContainer.classList.add("hidden"); scoreBoard.classList.add("hidden"); rangeHud.classList.add("hidden"); roundOverlay.innerText = ""; vsOverlay.classList.add("hidden");
             document.getElementById("lobbyCanvas").classList.remove("hidden");
@@ -4446,9 +4461,15 @@
             animateLobbyStage();
         }
 
-        function startLobbyTimer() { lobbyTimeoutCount = 10; clearInterval(lobbyTimerInterval); lobbyTimerInterval = setInterval(() => { lobbyTimeoutCount--; lobbyTimerEl.innerText = `AUTO START: ${lobbyTimeoutCount}s`; if (lobbyTimeoutCount <= 0) { clearInterval(lobbyTimerInterval); startMatchCountdown(); } }, 1000); }
+        function startLobbyTimer() { lobbyTimeoutCount = 10; clearInterval(lobbyTimerInterval); if (friendCode) { lobbyTimerEl.innerText = "FRIEND ROOM"; return; } lobbyTimerInterval = setInterval(() => { lobbyTimeoutCount--; lobbyTimerEl.innerText = `AUTO START: ${lobbyTimeoutCount}s`; if (lobbyTimeoutCount <= 0) { clearInterval(lobbyTimerInterval); startMatchCountdown(); } }, 1000); }
         
         readyBtn.addEventListener('click', () => { 
+            if (friendCode) {
+                if (!activeConn || !activeConn.open || !friendPeerInLobby) return;
+                try { activeConn.send({ type: "FRIEND_START" }); } catch (e) {}
+                startMatchCountdown();
+                return;
+            }
             amIReady = !amIReady; readyBtn.innerText = amIReady ? "CANCEL READY" : "READY / 準備完了"; 
             if (amIReady) {
                 readyBtn.classList.add("is-ready"); myStatusInd.innerText = "READY"; myStatusInd.classList.add("ready"); myPlayerCard.classList.add("card-ready");
@@ -4459,6 +4480,7 @@
         });
         
         function handleNetworkData(data) {
+            if (data.type === "READY_CHANGE" && friendCode) { friendPeerInLobby = true; refreshReadyBtn(); } // READY_CHANGEはロビー内からしか送られない
             if (data.type === "NAME_EXCHANGE") { 
                 if (data.name) {
                     enemyPlayerName = data.name; 
@@ -4483,6 +4505,7 @@
                     sendNamePacket(false);
                 }
             }
+            else if (data.type === "FRIEND_START") { if (friendCode && !gameStarted && screenLobby && !screenLobby.classList.contains("hidden")) startMatchCountdown(); }
             else if (data.type === "READY_CHANGE") { 
                 if (data.name) {
                     enemyPlayerName = data.name;
@@ -4494,6 +4517,7 @@
                 } else {
                     enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
                 } 
+                if (friendCode) refreshReadyBtn();
                 checkDirectStart(); 
             }
             else if (data.type === "GAME_SYNC") { 
@@ -4572,6 +4596,7 @@
         function startMatchCountdown() {
             if (gameStarted || !activeConn || !activeConn.open || !screenLobby || screenLobby.classList.contains("hidden")) return;
             if (matchCountdownInterval) return;
+            friendPeerInLobby = false;
             clearInterval(lobbyTimerInterval);
             clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             setUIScreen("COUNTDOWN");
