@@ -1170,12 +1170,12 @@
         .paint-btn:hover { border-color: #00f0ff; }
         .paint-btn.active { background: #0e7490; border-color: #00f0ff; }
         .paint-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
-        .paint-canvas-wrap { position: relative; width: min(384px, 86vw); aspect-ratio: 1 / 1; margin: 8px 0; border: 2px solid #475569;
+        .paint-canvas-wrap { position: relative; width: min(420px, 86vw); aspect-ratio: 3 / 2; margin: 8px 0; border: 2px solid #475569;
             background: #1e293b; touch-action: none; }
         #paintCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: crosshair; }
         .paint-grid { position: absolute; inset: 0; pointer-events: none;
             background-image: linear-gradient(to right, rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.16) 1px, transparent 1px);
-            background-size: calc(100% / 32) calc(100% / 32); }
+            background-size: calc(100% / 96) calc(100% / 64); }
         #paintColor { width: 54px; height: 38px; border: 1px solid #94a3b8; background: none; padding: 0; cursor: pointer; }
         #paintHex { width: 92px; padding: 8px; background: #0f172a; border: 1px solid #475569; color: #f8fafc; font-family: monospace; font-size: 14px; user-select: text; }
         .paint-swatch { width: 24px; height: 24px; border: 1px solid #94a3b8; cursor: pointer; }
@@ -1375,10 +1375,12 @@
                 <div class="mode-card-body">
                     <div id="modeTitleDisplay" class="mode-name-display">オンライン対戦 (1v1)</div>
                     <div id="modeDescDisplay" class="mode-desc-display">他のプレイヤーとリアルタイム1対1対戦</div>
-                    <div class="mode-switch-btns" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <input type="text" id="friendCodeInput" class="hidden" inputmode="numeric" maxlength="4" placeholder="4桁の番号" style="width:100%;margin:6px 0;padding:8px;background:#0f172a;border:1px solid #38bdf8;color:#fff;font-family:Orbitron,sans-serif;letter-spacing:6px;text-align:center;" onfocus="currentUIScreen='INPUT'" onblur="currentUIScreen='MENU'" oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                    <div class="mode-switch-btns" style="grid-template-columns: 1fr 1fr 1fr 1fr;">
                         <div id="selectMode1v1" class="mode-mini-btn selected">オンライン</div>
                         <div id="selectModeNpc" class="mode-mini-btn">NPC対戦</div>
                         <div id="selectModeRange" class="mode-mini-btn">訓練場</div>
+                        <div id="selectModeFriend" class="mode-mini-btn">フレンド</div>
                     </div>
                 </div>
             </div>
@@ -1541,6 +1543,7 @@
                 </div>
             </div>
             <button id="readyBtn" class="panel-btn">READY / 準備完了</button>
+            <button id="leaveLobbyBtn" class="panel-btn" style="border-left-color:#f43f5e; margin-top:8px;">メニューへ戻る</button>
         </div>
     </div>
 
@@ -1654,6 +1657,7 @@
         <div class="ammo-box-hud">
             <span class="ammo-label">MAGAZINE // 9MM CARBINE</span>
             <div id="ammo-panel">30 / 30</div>
+            <div id="heal-panel" style="position:fixed;right:24px;bottom:96px;z-index:20;padding:6px 14px;background:rgba(15,23,42,.85);border:1px solid #34d399;color:#6ee7b7;font-family:Orbitron,sans-serif;font-size:13px;font-weight:900;">＋ MEDKIT [H] ×1</div>
         </div>
     </div>
 
@@ -1703,10 +1707,9 @@
         <div class="paint-panel">
             <div class="paint-head"><span>キャラ塗装 / PIXEL PAINT</span><button id="paintCloseBtn" class="paint-btn">✕ 閉じる</button></div>
             <div class="paint-row">
-                <button class="paint-btn active" data-layer="main">メイン装甲（赤部分）</button>
-                <button class="paint-btn" data-layer="trim">トリム（白部分）</button>
+                <select id="paintPartSel" class="paint-btn" style="flex:1"></select>
             </div>
-            <div class="paint-canvas-wrap"><canvas id="paintCanvas" width="32" height="32"></canvas><div class="paint-grid"></div></div>
+            <div class="paint-canvas-wrap"><canvas id="paintCanvas" width="96" height="64"></canvas><div class="paint-grid"></div></div>
             <div class="paint-row" id="paintToolRow">
                 <button class="paint-btn active" data-tool="pen">ペン</button>
                 <button class="paint-btn" data-tool="eraser">消しゴム</button>
@@ -1721,11 +1724,12 @@
             <div class="paint-row" id="paintPalette"></div>
             <div class="paint-row" id="paintRecent"></div>
             <div class="paint-row">
+                <button id="paintRotL" class="paint-btn">◀</button><button id="paintRotR" class="paint-btn">▶</button><button id="paintUp" class="paint-btn">▲</button><button id="paintDown" class="paint-btn">▼</button>
                 <button id="paintUndoBtn" class="paint-btn">↶ 元に戻す</button>
-                <button id="paintResetLayerBtn" class="paint-btn">この面を初期色に</button>
+                <button id="paintResetLayerBtn" class="paint-btn">このパーツを初期色に</button>
                 <button id="paintResetAllBtn" class="paint-btn">全て初期化</button>
             </div>
-            <div style="font-size:11px; color:#94a3b8; line-height:1.5;">1マス＝1ピクセル。描いた内容は自動保存され、対戦相手にも表示されます。右側のロビーのキャラにリアルタイム反映されます。（PC: Ctrl+Z で元に戻す / Esc で閉じる）</div>
+            <div style="font-size:11px; color:#94a3b8; line-height:1.5;">右のキャラを直接クリック／ドラッグすると、その場所の1ピクセルを塗れます。パーツごと・面ごとに別々の32x32です（上の枠は 左から +X側・-X側・上 / 下・後ろ・前 の6面）。キャラ以外の場所をドラッグ（または右ドラッグ）で回転、ホイールでズーム、▲▼◀▶ボタンでも回せます。描いた内容は自動保存され、対戦相手にも表示されます。右側のロビーのキャラにリアルタイム反映されます。（PC: Ctrl+Z で元に戻す / Esc で閉じる）</div>
             <div id="paintMsg"></div>
         </div>
     </div>
@@ -3464,7 +3468,7 @@
             if (gameStarted) return;
             lobbyAnimId = requestAnimationFrame(animateLobbyStage);
             if (lobbyBotGroup) {
-                lobbyBotGroup.rotation.y = Math.PI + Math.sin(performance.now() * 0.0008) * 0.22;
+                lobbyBotGroup.rotation.y = (window.__paintRot !== undefined) ? Math.PI + window.__paintRot : Math.PI + Math.sin(performance.now() * 0.0008) * 0.22;
             }
             if (lobbyRenderer && lobbyScene && lobbyCamera) {
                 lobbyRenderer.render(lobbyScene, lobbyCamera);
@@ -3609,6 +3613,17 @@
             btn1.classList.remove("selected");
             btnNpc.classList.remove("selected");
             btn2.classList.remove("selected");
+            document.getElementById("selectModeFriend").classList.remove("selected");
+            document.getElementById("friendCodeInput").classList.toggle("hidden", mode !== "FRIEND");
+            if (mode === "FRIEND") {
+                banner.classList.remove("range-mode");
+                banner.style.background = "linear-gradient(90deg, #7c3aed 0%, #db2777 100%)";
+                banner.innerHTML = `<span>● フレンドマッチ</span><span>CODE ROOM</span>`;
+                title.innerText = "フレンドマッチ (1v1)";
+                desc.innerText = "同じ4桁の番号を入力した2人でロビーに集合";
+                document.getElementById("selectModeFriend").classList.add("selected");
+                return;
+            }
 
             if (mode === "1V1") {
                 banner.classList.remove("range-mode");
@@ -3637,6 +3652,7 @@
         document.getElementById("selectMode1v1").addEventListener('click', () => selectLobbyModeUI("1V1"));
         document.getElementById("selectModeNpc").addEventListener('click', () => selectLobbyModeUI("NPC"));
         document.getElementById("selectModeRange").addEventListener('click', () => selectLobbyModeUI("RANGE"));
+        document.getElementById("selectModeFriend").addEventListener('click', () => selectLobbyModeUI("FRIEND"));
 
         let currentUIScreen = "HELP";
         let currentButtons = [];
@@ -3658,7 +3674,7 @@
             } else if (screenName === "HELP") {
                 currentButtons = [document.getElementById("closeHelpBtn")];
             } else if (screenName === "LOBBY") {
-                currentButtons = [readyBtn];
+                currentButtons = [readyBtn, document.getElementById("leaveLobbyBtn")];
             } else if (screenName === "RESULT") {
                 currentButtons = [document.getElementById("backToMenuBtn")];
             } else {
@@ -3730,7 +3746,8 @@
             screenMenu.classList.remove("hidden");
             setUIScreen("MENU");
         });
-        document.getElementById("backToMenuBtn").addEventListener('click', resetToMenu);
+        document.getElementById("leaveLobbyBtn").addEventListener('click', resetToMenu);
+        document.getElementById("backToMenuBtn").addEventListener('click', returnToMatchLobby);
         
         // 設定項目のクリック操作対応
         document.getElementById("set-sens").addEventListener('click', () => {
@@ -3800,7 +3817,7 @@
 
         function cancelMatchmakingAndExitRange() {
             matchmakingAttemptId++;
-            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); clearInterval(nameSyncInterval); clearInterval(pingIntervalToken);
+            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null; clearInterval(nameSyncInterval); clearInterval(pingIntervalToken);
             isConnecting = false;
             isMatchmakingTraining = false;
             if (peer) { try { peer.destroy(); } catch(e){} peer = null; }
@@ -3831,7 +3848,12 @@
             screenMenu.classList.add("hidden");
             document.getElementById("lobbyCanvas").classList.add("hidden");
 
-            if (selectedLobbyMode === "1V1") {
+            if (selectedLobbyMode === "FRIEND") {
+                const code = document.getElementById("friendCodeInput").value.trim();
+                if (!/^\d{4}$/.test(code)) { screenMenu.classList.remove("hidden"); document.getElementById("lobbyCanvas").classList.remove("hidden"); showToast("4桁の数字を入力してください"); return; }
+                friendCode = code;
+            } else { friendCode = null; }
+            if (selectedLobbyMode === "1V1" || selectedLobbyMode === "FRIEND") {
                 // マッチング待機中も訓練場でエイム練習できるようにする
                 isTrainingMode = true;
                 isNpcBattleMode = false;
@@ -4035,89 +4057,182 @@
             m.rotation.y += dr * k;
         }
 
+        const MAX_SCAN_ROOMS = 4;
+        let friendCode = null;
         function startMatching() {
             if (!isMatchmakingTraining || isConnecting || activeConn) return;
+
             isConnecting = true;
             const attemptId = ++matchmakingAttemptId;
-            const targetRoomId = ROOM_BASE_NAME + currentRoomNumber;
+            const rooms = friendCode
+                ? [ROOM_BASE_NAME + "friend_" + friendCode]
+                : Array.from({ length: MAX_SCAN_ROOMS }, (_, i) => ROOM_BASE_NAME + (i + 1));
+
+            let idx = 0;
+            let firstFree = -1;
             let settled = false;
             let connectTimeout = null;
-            const isCurrent = () => attemptId === matchmakingAttemptId && isMatchmakingTraining && !activeConn;
+            let localPeer = null;
+            let roomAttempt = null;
+
+            const isCurrent = () =>
+                attemptId === matchmakingAttemptId &&
+                isMatchmakingTraining &&
+                !activeConn;
+
             const setStatus = (message) => {
                 if (!isCurrent()) return;
                 statusEl.innerText = message;
                 const el = document.getElementById("mm-range-status");
                 if (el) el.innerText = message;
             };
-            const destroyPeer = (target) => { try { if (target && !target.destroyed) target.destroy(); } catch (e) {} };
-            const retryNextRoom = (delay = 500) => {
-                if (!isCurrent() || settled) return;
-                settled = true;
-                clearTimeout(connectTimeout);
-                destroyPeer(peer);
-                peer = null;
-                isConnecting = false;
-                currentRoomNumber++;
-                setTimeout(() => { if (isCurrent() && !isConnecting && !activeConn) startMatching(); }, delay);
-            };
-            const becomeHost = () => {
-                if (!isCurrent() || settled) return;
-                settled = true;
-                clearTimeout(connectTimeout);
-                const oldPeer = peer;
-                destroyPeer(oldPeer);
-                if (peer === oldPeer) peer = null;
-                isConnecting = false;
-                initHost(targetRoomId, attemptId);
+
+            const destroyPeer = (target) => {
+                try {
+                    if (target && !target.destroyed) target.destroy();
+                } catch (e) {}
             };
 
-            setStatus(`ROOM ${currentRoomNumber} を検索中（対戦相手を確認しています）`);
-            destroyPeer(peer);
-            peer = null;
-            let localPeer;
-            try { localPeer = new Peer(ENHANCED_PEER_CONFIG); }
-            catch (e) { retryNextRoom(1200); return; }
+            const cleanupAttempt = () => {
+                clearTimeout(connectTimeout);
+                connectTimeout = null;
+                destroyPeer(localPeer);
+                if (peer === localPeer) peer = null;
+                if (isCurrent()) isConnecting = false;
+            };
+
+            const restart = (delay) => {
+                if (settled || !isCurrent()) return;
+                settled = true;
+                cleanupAttempt();
+                setTimeout(() => {
+                    if (isCurrent() && !isConnecting) startMatching();
+                }, delay);
+            };
+
+            const becomeHost = (roomIndex) => {
+                if (settled || !isCurrent()) return;
+                settled = true;
+                cleanupAttempt();
+                currentRoomNumber = roomIndex + 1;
+                initHost(rooms[roomIndex], attemptId);
+            };
+
+            const finishRoom = (attempt, isFree = false) => {
+                if (!isCurrent() || settled || !attempt || attempt.done) return;
+                attempt.done = true;
+                clearTimeout(connectTimeout);
+                connectTimeout = null;
+
+                if (isFree && firstFree < 0) firstFree = attempt.index;
+
+                if (attempt.conn) {
+                    try { attempt.conn.close(); } catch (e) {}
+                }
+
+                if (roomAttempt === attempt) roomAttempt = null;
+                idx = attempt.index + 1;
+                tryRoom();
+            };
+
+            const tryRoom = () => {
+                if (!isCurrent() || settled) return;
+
+                if (idx >= rooms.length) {
+                    if (firstFree >= 0) {
+                        becomeHost(firstFree);
+                    } else {
+                        setStatus(friendCode
+                            ? `フレンド ${friendCode} は満員または応答なしです。再試行中…`
+                            : "全ルーム満員または応答なし。再検索中…");
+                        restart(1200);
+                    }
+                    return;
+                }
+
+                const roomIndex = idx;
+                const attempt = { index: roomIndex, done: false, conn: null };
+                roomAttempt = attempt;
+
+                setStatus(friendCode
+                    ? `フレンドコード ${friendCode} を確認中…`
+                    : `ROOM ${roomIndex + 1} を検索中…`);
+
+                let conn;
+                try {
+                    conn = localPeer.connect(rooms[roomIndex], { reliable: true });
+                    attempt.conn = conn;
+                } catch (e) {
+                    finishRoom(attempt, false);
+                    return;
+                }
+
+                connectTimeout = setTimeout(() => {
+                    if (!isCurrent() || settled || attempt.done) return;
+                    // タイムアウトだけでは空き部屋と判断しない
+                    finishRoom(attempt, false);
+                }, 10000);
+
+                conn.on('data', (data) => {
+                    if (!isCurrent() || settled || attempt.done || roomAttempt !== attempt || !data) return;
+
+                    if (data.type === "MATCH_ACCEPT") {
+                        attempt.done = true;
+                        settled = true;
+                        clearTimeout(connectTimeout);
+                        connectTimeout = null;
+                        isConnecting = false;
+                        currentRoomNumber = roomIndex + 1;
+                        playerRole = "GUEST";
+                        goToLobby(conn, "GUEST");
+                    } else if (data.type === "FULL") {
+                        finishRoom(attempt, false);
+                    }
+                });
+
+                const failed = (err) => {
+                    if (!isCurrent() || settled || attempt.done || roomAttempt !== attempt) return;
+                    const unavailable = !!(err && err.type === "peer-unavailable");
+                    finishRoom(attempt, unavailable);
+                };
+                conn.on('close', () => failed(null));
+                conn.on('error', (err) => failed(err));
+            };
+
+            try {
+                localPeer = new Peer(ENHANCED_PEER_CONFIG);
+            } catch (e) {
+                isConnecting = false;
+                setTimeout(() => {
+                    if (isCurrent() && !isConnecting) startMatching();
+                }, 1200);
+                return;
+            }
+
             peer = localPeer;
 
             localPeer.on('open', () => {
-                if (!isCurrent() || settled) return;
-                let conn;
-                try { conn = localPeer.connect(targetRoomId, { reliable: true }); }
-                catch (e) { becomeHost(); return; }
-                // 遠距離・モバイル回線で接続確立前にホストへ二重昇格しないよう猶予を確保
-                connectTimeout = setTimeout(() => {
-                    if (isCurrent() && !settled) retryNextRoom(700);
-                }, 9000);
-
-                conn.on('open', () => {
-                    if (!isCurrent() || settled) { try { conn.close(); } catch(e){} return; }
-                    settled = true;
-                    clearTimeout(connectTimeout);
-                    isConnecting = false;
-                    playerRole = "GUEST";
-                    goToLobby(conn, "GUEST");
-                });
-                conn.on('data', (data) => {
-                    if (!isCurrent() || settled) return;
-                    if (data && data.type === "FULL") retryNextRoom(150);
-                    else handleNetworkData(data);
-                });
-                conn.on('error', (err) => {
-                    if (!isCurrent() || settled) return;
-                    clearTimeout(connectTimeout);
-                    // peer-unavailable は空きルーム確定。他の一時エラーでは同じIDを奪い合わず次へ
-                    if (err && err.type === 'peer-unavailable') becomeHost();
-                    else retryNextRoom(900);
-                });
-                conn.on('close', () => {
-                    if (!isCurrent() || settled) return;
-                    retryNextRoom(500);
-                });
+                if (isCurrent() && !settled) tryRoom();
             });
+
+            localPeer.on('disconnected', () => {
+                if (!isCurrent() || settled) return;
+                try {
+                    if (!localPeer.destroyed) localPeer.reconnect();
+                } catch (e) {
+                    restart(1200);
+                }
+            });
+
             localPeer.on('error', (err) => {
                 if (!isCurrent() || settled) return;
-                if (err && err.type === 'peer-unavailable') becomeHost();
-                else retryNextRoom(1200);
+
+                if (err && err.type === 'peer-unavailable' && roomAttempt) {
+                    // PeerJSの未登録ID応答。接続側のerror/closeと競合しても一度だけ進める
+                    finishRoom(roomAttempt, true);
+                } else {
+                    restart(1500);
+                }
             });
         }
 
@@ -4127,44 +4242,49 @@
             try { hostPeer = new Peer(targetRoomId, ENHANCED_PEER_CONFIG); }
             catch (e) { isConnecting = false; setTimeout(() => { if (isMatchmakingTraining && !activeConn) startMatching(); }, 1000); return; }
             peer = hostPeer;
-            let accepted = false;
-            let pendingConnection = null;
+            let accepted = false, pendingConnection = null, rescanTimer = null;
+            const alive = () => attemptId === matchmakingAttemptId && isMatchmakingTraining && !activeConn;
+            const scheduleRescan = () => {
+                // 空き部屋を作ったまま他のホストとすれ違わないよう、定期的に再走査（フレンドは除く）
+                if (friendCode) return;
+                rescanTimer = setTimeout(() => {
+                    if (!alive() || accepted) return;
+                    if (pendingConnection) { scheduleRescan(); return; }
+                    try { hostPeer.destroy(); } catch (e) {} if (peer === hostPeer) peer = null;
+                    isConnecting = false; startMatching();
+                }, 7000 + Math.random() * 5000);
+            };
             hostPeer.on('open', () => {
-                if (attemptId !== matchmakingAttemptId || !isMatchmakingTraining || activeConn) { try { hostPeer.destroy(); } catch(e){} return; }
+                if (!alive()) { try { hostPeer.destroy(); } catch (e) {} return; }
                 isConnecting = false;
                 statusEl.innerText = "AWAITING OPPONENT...";
-                const mmRangeStatus = document.getElementById("mm-range-status");
-                if (mmRangeStatus) mmRangeStatus.innerText = `ROOM ${currentRoomNumber} で対戦相手を待機中（見つかるまでエイム練習可能）`;
+                const el = document.getElementById("mm-range-status");
+                if (el) el.innerText = friendCode ? `フレンドコード ${friendCode} で相手を待機中` : `ROOM ${currentRoomNumber} で対戦相手を待機中（見つかるまでエイム練習可能）`;
+                scheduleRescan();
             });
+            hostPeer.on('disconnected', () => { try { if (!hostPeer.destroyed) hostPeer.reconnect(); } catch (e) {} });
             hostPeer.on('connection', (conn) => {
-                if (attemptId !== matchmakingAttemptId || !isMatchmakingTraining || activeConn || accepted || pendingConnection) {
-                    conn.on('open', () => { try { conn.send({ type: "FULL" }); } catch(e){} setTimeout(() => { try { conn.close(); } catch(e){} }, 250); });
+                if (!alive() || accepted || pendingConnection) {
+                    conn.on('open', () => { try { conn.send({ type: "FULL" }); } catch (e) {} setTimeout(() => { try { conn.close(); } catch (e) {} }, 400); });
                     return;
                 }
-                // 最初の接続をconnectionイベント時点で予約し、open待ち中の二重受け入れを防止
                 pendingConnection = conn;
                 conn.on('open', () => {
-                    if (attemptId !== matchmakingAttemptId || !isMatchmakingTraining || activeConn || pendingConnection !== conn) { try { conn.close(); } catch(e){} return; }
-                    accepted = true;
-                    isConnecting = false;
-                    playerRole = "HOST";
+                    if (!alive() || pendingConnection !== conn) { try { conn.send({ type: "FULL" }); } catch (e) {} setTimeout(() => { try { conn.close(); } catch (e) {} }, 400); return; }
+                    accepted = true; clearTimeout(rescanTimer); isConnecting = false; playerRole = "HOST";
+                    try { conn.send({ type: "MATCH_ACCEPT" }); } catch (e) {}
                     goToLobby(conn, "HOST");
                 });
-                conn.on('error', () => { if (!accepted && pendingConnection === conn && attemptId === matchmakingAttemptId) { pendingConnection = null; try { conn.close(); } catch(e){} } });
-                conn.on('close', () => { if (!accepted && pendingConnection === conn) pendingConnection = null; });
+                const dropped = () => { if (!accepted && pendingConnection === conn) pendingConnection = null; };
+                conn.on('error', dropped); conn.on('close', dropped);
             });
             hostPeer.on('error', (err) => {
                 if (attemptId !== matchmakingAttemptId || activeConn) return;
-                try { hostPeer.destroy(); } catch(e){}
+                clearTimeout(rescanTimer);
+                try { hostPeer.destroy(); } catch (e) {}
                 if (peer === hostPeer) peer = null;
                 isConnecting = false;
-                // 同時に別プレイヤーが同じルームを確保した。番号を進めずゲストとして再検索
-                if (err && err.type === 'unavailable-id') {
-                    setTimeout(() => { if (isMatchmakingTraining && !activeConn && attemptId === matchmakingAttemptId) startMatching(); }, 300);
-                } else {
-                    currentRoomNumber++;
-                    setTimeout(() => { if (isMatchmakingTraining && !activeConn && attemptId === matchmakingAttemptId) startMatching(); }, 1000);
-                }
+                setTimeout(() => { if (alive()) startMatching(); }, err && err.type === 'unavailable-id' ? 300 : 1000);
             });
         }
 
@@ -4203,14 +4323,14 @@
                 cleanup3DGame();
             }
             clearInterval(lobbyTimerInterval);
-            clearInterval(matchCountdownInterval);
+            clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             amIReady = false; isEnemyReady = false; gameStarted = false;
             readyBtn.innerText = "READY / 準備完了"; readyBtn.classList.remove("is-ready");
             myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
             enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
             enemyPlayerName = "OPPONENT";
             activeConn = conn; screenMatching.classList.add("hidden"); screenLobby.classList.remove("hidden"); matchPerfectEnded = false;
-            document.getElementById("lobbyRoomName").innerText = `ROOM ${currentRoomNumber} // ${role}`;
+            document.getElementById("lobbyRoomName").innerText = friendCode ? `FRIEND ${friendCode} // ${role}` : `ROOM ${currentRoomNumber} // ${role}`;
             document.getElementById("lobbyMyName").innerText = myPlayerName;
             document.getElementById("lobbyEnemyName").innerText = "CONNECTING...";
             
@@ -4253,9 +4373,33 @@
             }, 2000);
         }
 
+        function showToast(msg) {
+            const t = document.createElement("div");
+            t.style.cssText = "position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:9999;background:#0f172a;border:1px solid #38bdf8;color:#fff;padding:10px 22px;font-weight:700;";
+            t.innerText = msg; document.body.appendChild(t); setTimeout(() => t.remove(), 3500);
+        }
+        function returnToMatchLobby() {
+            if (isNpcBattleMode || !activeConn || !activeConn.open) { resetToMenu(); return; }
+            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null; clearInterval(nameSyncInterval);
+            amIReady = false; isEnemyReady = false; gameStarted = false; matchPerfectEnded = false; isRoundEnding = false;
+            readyBtn.innerText = "READY / 準備完了"; readyBtn.classList.remove("is-ready");
+            myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
+            enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
+            screenResult.classList.add("hidden"); fullscreenCountdown.classList.add("hidden"); vsOverlay.classList.add("hidden");
+            document.getElementById("lobbyCanvas").classList.add("hidden");
+            screenLobby.classList.remove("hidden");
+            if (playerRole === "HOST") { sharedMapSeed = Math.floor(Math.random() * 900000) + 100000; pickRandomBattleMap(); }
+            sendNamePacket(true);
+            try { activeConn.send({ type: "READY_CHANGE", isReady: false, name: myPlayerName }); } catch (e) {}
+            setUIScreen("LOBBY");
+            startLobbyTimer();
+        }
         function handleOpponentDisconnect() {
             if (matchPerfectEnded || isTrainingMode) return;
-            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); clearInterval(pingIntervalToken); clearInterval(nameSyncInterval); cleanup3DGame();
+            if (!gameStarted) { // ロビー/カウントダウン中の離脱は不戦勝にしない（報酬の不正取得防止）
+                resetToMenu(); showToast("対戦相手が退出しました"); return;
+            }
+            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null; clearInterval(pingIntervalToken); clearInterval(nameSyncInterval); cleanup3DGame();
             screenLobby.classList.add("hidden"); fullscreenCountdown.classList.add("hidden"); crosshair.classList.add("hidden"); hudContainer.classList.add("hidden"); scoreBoard.classList.add("hidden"); rangeHud.classList.add("hidden"); roundOverlay.innerText = ""; vsOverlay.classList.add("hidden");
             document.getElementById("resultTitle").innerText = "VICTORY"; document.getElementById("resultTitle").style.color = "#00f0ff";
             document.getElementById("resultReason").innerText = "対戦相手が抜けました。不戦勝です。";
@@ -4287,7 +4431,7 @@
 
         function resetToMenu() {
             matchmakingAttemptId++;
-            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval);
+            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             clearInterval(pingIntervalToken); clearInterval(nameSyncInterval);
             if (activeConn) { activeConn.close(); activeConn = null; } if (peer) { peer.destroy(); peer = null; }
             amIReady = false; isEnemyReady = false; gameStarted = false; isConnecting = false; lobbyTimeoutCount = 10; currentRoomNumber = 1; matchPerfectEnded = false; isTrainingMode = false; isNpcBattleMode = false; enemyPlayerName = "OPPONENT";
@@ -4429,7 +4573,7 @@
             if (gameStarted || !activeConn || !activeConn.open || !screenLobby || screenLobby.classList.contains("hidden")) return;
             if (matchCountdownInterval) return;
             clearInterval(lobbyTimerInterval);
-            clearInterval(matchCountdownInterval);
+            clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             setUIScreen("COUNTDOWN");
             screenLobby.classList.add("hidden");
             fullscreenCountdown.classList.remove("hidden");
@@ -4441,7 +4585,7 @@
                 if (count > 0) {
                     fullscreenCountdownNum.innerText = count;
                 } else {
-                    clearInterval(matchCountdownInterval);
+                    clearInterval(matchCountdownInterval); matchCountdownInterval = null;
                     fullscreenCountdown.classList.add("hidden");
                     triggerVSEffect();
                 }
@@ -4453,7 +4597,7 @@
             document.getElementById("vsPlayer1").innerText = myPlayerName;
             document.getElementById("vsPlayer2").innerText = enemyPlayerName;
             vsOverlay.classList.remove("hidden");
-            setTimeout(() => { vsOverlay.classList.add("hidden"); init3DGame(false); }, 2500); 
+            setTimeout(() => { vsOverlay.classList.add("hidden"); if (!activeConn) return; init3DGame(false); }, 2500); 
         }
 
 
@@ -5392,27 +5536,37 @@
         // キャラ塗装（32x32を1ピクセル単位で塗れる / メイン装甲＆トリムの2面）
         // ============================================================
         const SKIN_SIZE = 32;
-        const SKIN_LAYERS = ["main", "trim"];
-        const SKIN_BASE_HEX = { main: "#d63031", trim: "#f8fafc" };
-        const STORAGE_KEY_SKIN = "fps_player_skin_v1";
+        const SKIN_W = 96, SKIN_H = 64; // 32x32の面 × 3列2行（+X,-X,上 / 下,後,前）
+        const SKIN_PARTS = [
+            ["helmet", "ヘルメット", "#d63031"], ["crest", "ヘルメット上の飾り", "#f8fafc"], ["chest", "胸部", "#d63031"],
+            ["plateL", "胸プレート（画面左）", "#f8fafc"], ["plateR", "胸プレート（画面右）", "#f8fafc"],
+            ["shoulderL", "肩（画面左）", "#f8fafc"], ["shoulderR", "肩（画面右）", "#f8fafc"],
+            ["forearmL", "前腕（画面左）", "#d63031"], ["forearmR", "前腕（画面右）", "#d63031"],
+            ["thighL", "太もも（画面左）", "#d63031"], ["thighR", "太もも（画面右）", "#d63031"],
+            ["shinL", "すね（画面左）", "#f8fafc"], ["shinR", "すね（画面右）", "#f8fafc"]
+        ];
+        const SKIN_LAYERS = SKIN_PARTS.map(p => p[0]);
+        const SKIN_BASE_HEX = {}; SKIN_PARTS.forEach(p => { SKIN_BASE_HEX[p[0]] = p[2]; });
+        const STORAGE_KEY_SKIN = "fps_player_skin_v2";
         let mySkin = null;     // { main: dataURL, trim: dataURL } / 未保存ならnull（相手にも送る）
         let enemySkin = null;  // 相手から受け取った塗装
         const paintCanvases = {};
         SKIN_LAYERS.forEach(k => {
             const c = document.createElement("canvas");
-            c.width = c.height = SKIN_SIZE;
+            c.width = SKIN_W; c.height = SKIN_H;
             const x = c.getContext("2d");
             x.fillStyle = SKIN_BASE_HEX[k];
-            x.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE);
+            x.fillRect(0, 0, SKIN_W, SKIN_H);
             paintCanvases[k] = c;
         });
 
         function applySkinCanvases(bot, canv) {
-            if (!bot || !bot.userData || !bot.userData.armorMaterials) return;
-            const mats = bot.userData.armorMaterials; // [メイン, トリム]
+            if (!bot || !bot.userData || !bot.userData.skinMats) return;
+            const mats = bot.userData.skinMats; // パーツ名 → マテリアル
+            if (!mats) return;
             bot.userData.skinTex = bot.userData.skinTex || {};
-            SKIN_LAYERS.forEach((k, i) => {
-                const mat = mats[i];
+            SKIN_LAYERS.forEach((k) => {
+                const mat = mats[k];
                 if (!mat) return;
                 if (!canv || !canv[k]) {
                     if (mat.map) {
@@ -5440,7 +5594,7 @@
         }
 
         function isValidSkinURL(src) {
-            return typeof src === "string" && src.length < 20000 && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(src);
+            return typeof src === "string" && src.length < 40000 && /^data:image\/png;base64,[A-Za-z0-9+\/=]+$/.test(src);
         }
 
         // 相手の塗装（dataURL）を読み込んでボットに反映
@@ -5453,12 +5607,12 @@
             const done = () => { if (--pending === 0) applySkinCanvases(bot, out); };
             layers.forEach(k => {
                 const c = document.createElement("canvas");
-                c.width = c.height = SKIN_SIZE;
+                c.width = SKIN_W; c.height = SKIN_H;
                 const x = c.getContext("2d");
                 x.fillStyle = SKIN_BASE_HEX[k];
-                x.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE);
+                x.fillRect(0, 0, SKIN_W, SKIN_H);
                 const img = new Image();
-                img.onload = () => { x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, SKIN_SIZE, SKIN_SIZE); out[k] = c; done(); };
+                img.onload = () => { x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, SKIN_W, SKIN_H); out[k] = c; done(); };
                 img.onerror = () => { out[k] = c; done(); };
                 img.src = skin[k];
             });
@@ -5472,10 +5626,8 @@
 
         function saveSkinToStorage() {
             try {
-                mySkin = {
-                    main: paintCanvases.main.toDataURL("image/png"),
-                    trim: paintCanvases.trim.toDataURL("image/png")
-                };
+                mySkin = {};
+                SKIN_LAYERS.forEach(k => { mySkin[k] = paintCanvases[k].toDataURL("image/png"); });
                 localStorage.setItem(STORAGE_KEY_SKIN, JSON.stringify(mySkin));
             } catch (e) {}
         }
@@ -5492,7 +5644,7 @@
                 const done = () => { if (--pending === 0) { refreshLobbySkin(); if (typeof refreshPaintView === "function") refreshPaintView(); } };
                 layers.forEach(k => {
                     const img = new Image();
-                    img.onload = () => { const x = paintCanvases[k].getContext("2d"); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, SKIN_SIZE, SKIN_SIZE); done(); };
+                    img.onload = () => { const x = paintCanvases[k].getContext("2d"); x.imageSmoothingEnabled = false; x.drawImage(img, 0, 0, SKIN_W, SKIN_H); done(); };
                     img.onerror = done;
                     img.src = parsed[k];
                 });
@@ -5509,7 +5661,7 @@
             const hexInput = document.getElementById("paintHex");
             const posEl = document.getElementById("paintPos");
             const msgEl = document.getElementById("paintMsg");
-            let layer = "main", tool = "pen", color = "#ff3b30";
+            let layer = "helmet", tool = "pen", color = "#ff3b30";
             let drawing = false, lastPx = null, changed = false, liveQueued = false;
             const undoStack = [];
             const recent = [];
@@ -5518,8 +5670,10 @@
             const ctx = () => paintCanvases[layer].getContext("2d");
             function refresh() {
                 view.imageSmoothingEnabled = false;
-                view.clearRect(0, 0, SKIN_SIZE, SKIN_SIZE);
+                view.clearRect(0, 0, SKIN_W, SKIN_H);
                 view.drawImage(paintCanvases[layer], 0, 0);
+                view.fillStyle = "rgba(0,240,255,.85)";
+                view.fillRect(31, 0, 1, SKIN_H); view.fillRect(63, 0, 1, SKIN_H); view.fillRect(0, 31, SKIN_W, 1);
             }
             refreshPaintView = refresh;
             function live() {
@@ -5563,14 +5717,14 @@
             }
             function setLayer(k) {
                 layer = k;
-                document.querySelectorAll("#screenPaint [data-layer]").forEach(b => b.classList.toggle("active", b.dataset.layer === k));
+                const sel = document.getElementById("paintPartSel"); if (sel) sel.value = k;
                 refresh();
             }
             function hexToRgb(hex) { return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)]; }
             function toHex(r, g, b) { return "#" + [r, g, b].map(v => v.toString(16).padStart(2, "0")).join(""); }
 
             function pushUndo() {
-                undoStack.push({ layer, data: ctx().getImageData(0, 0, SKIN_SIZE, SKIN_SIZE) });
+                undoStack.push({ layer, data: ctx().getImageData(0, 0, SKIN_W, SKIN_H) });
                 if (undoStack.length > 40) undoStack.shift();
             }
             function undo() {
@@ -5580,7 +5734,7 @@
                 refresh(); live(); saveSkinToStorage();
             }
             function plot(x, y) {
-                if (x < 0 || y < 0 || x >= SKIN_SIZE || y >= SKIN_SIZE) return;
+                if (x < 0 || y < 0 || x >= SKIN_W || y >= SKIN_H) return;
                 const c = ctx();
                 c.fillStyle = (tool === "eraser") ? SKIN_BASE_HEX[layer] : color;
                 c.fillRect(x, y, 1, 1);
@@ -5601,9 +5755,9 @@
             }
             function floodFill(sx, sy) {
                 const c = ctx();
-                const img = c.getImageData(0, 0, SKIN_SIZE, SKIN_SIZE);
+                const img = c.getImageData(0, 0, SKIN_W, SKIN_H);
                 const d = img.data;
-                const idx = (x, y) => (y * SKIN_SIZE + x) * 4;
+                const idx = (x, y) => (y * SKIN_W + x) * 4;
                 const t = idx(sx, sy);
                 const target = [d[t], d[t + 1], d[t + 2], d[t + 3]];
                 const [nr, ng, nb] = hexToRgb(color);
@@ -5611,7 +5765,7 @@
                 const stack = [[sx, sy]];
                 while (stack.length) {
                     const [x, y] = stack.pop();
-                    if (x < 0 || y < 0 || x >= SKIN_SIZE || y >= SKIN_SIZE) continue;
+                    if (x < 0 || y < 0 || x >= SKIN_W || y >= SKIN_H) continue;
                     const i = idx(x, y);
                     if (d[i] !== target[0] || d[i + 1] !== target[1] || d[i + 2] !== target[2] || d[i + 3] !== target[3]) continue;
                     d[i] = nr; d[i + 1] = ng; d[i + 2] = nb; d[i + 3] = 255;
@@ -5623,17 +5777,13 @@
             function pxFromEvent(e) {
                 const r = cv.getBoundingClientRect();
                 if (r.width <= 0 || r.height <= 0) return null;
-                const x = Math.floor((e.clientX - r.left) / r.width * SKIN_SIZE);
-                const y = Math.floor((e.clientY - r.top) / r.height * SKIN_SIZE);
-                if (x < 0 || y < 0 || x >= SKIN_SIZE || y >= SKIN_SIZE) return null;
+                const x = Math.floor((e.clientX - r.left) / r.width * SKIN_W);
+                const y = Math.floor((e.clientY - r.top) / r.height * SKIN_H);
+                if (x < 0 || y < 0 || x >= SKIN_W || y >= SKIN_H) return null;
                 return { x, y };
             }
 
-            cv.addEventListener("pointerdown", e => {
-                e.preventDefault();
-                const p = pxFromEvent(e);
-                if (!p) return;
-                try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+            function downAt(p) {
                 if (tool === "picker") {
                     const px = ctx().getImageData(p.x, p.y, 1, 1).data;
                     setColor(toHex(px[0], px[1], px[2]));
@@ -5654,14 +5804,24 @@
                 if (tool === "pen") pushRecent(color);
                 plot(p.x, p.y);
                 refresh(); live();
+            }
+            function moveAt(p, connect) {
+                if (!drawing || !p) return;
+                if (connect) line(lastPx, p); else plot(p.x, p.y);
+                lastPx = p;
+                refresh(); live();
+            }
+            cv.addEventListener("pointerdown", e => {
+                e.preventDefault();
+                const p = pxFromEvent(e);
+                if (!p) return;
+                try { cv.setPointerCapture(e.pointerId); } catch (err) {}
+                downAt(p);
             });
             cv.addEventListener("pointermove", e => {
                 const p = pxFromEvent(e);
                 posEl.innerText = p ? ("X:" + p.x + " Y:" + p.y) : "";
-                if (!drawing || !p) return;
-                line(lastPx, p);
-                lastPx = p;
-                refresh(); live();
+                moveAt(p, true);
             });
             const endStroke = () => {
                 if (!drawing) return;
@@ -5673,6 +5833,64 @@
             cv.addEventListener("pointercancel", endStroke);
             cv.addEventListener("lostpointercapture", endStroke);
 
+            // ===== 3Dキャラに直接ペイント（レイキャスト → UV → 1ピクセル） =====
+            const rc = new THREE.Raycaster(), ndc = new THREE.Vector2();
+            let drag3d = false, rot3d = false, rotX = 0, rotY = 0, lastKey = null;
+            const isVisibleChain = (o) => { for (; o; o = o.parent) if (!o.visible) return false; return true; };
+            function pick3D(e) {
+                if (typeof lobbyBotGroup === "undefined" || !lobbyBotGroup || !lobbyCamera || !lobbyRenderer) return null;
+                if (!lobbyBotGroup.userData.skinMats) return null;
+                const r = lobbyRenderer.domElement.getBoundingClientRect();
+                if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) return null;
+                ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+                rc.setFromCamera(ndc, lobbyCamera);
+                lobbyBotGroup.updateMatrixWorld(true);
+                const hit = rc.intersectObject(lobbyBotGroup, true).find(h => isVisibleChain(h.object));
+                if (!hit || !hit.uv || !hit.object.userData.skinPart) return null; // 装甲以外には塗れない
+                const x = Math.min(SKIN_W - 1, Math.max(0, Math.floor(hit.uv.x * SKIN_W)));
+                const y = Math.min(SKIN_H - 1, Math.max(0, Math.floor((1 - hit.uv.y) * SKIN_H)));
+                return { p: { x, y }, layer: hit.object.userData.skinPart, key: hit.object.uuid + ":" + (hit.faceIndex >> 1) };
+            }
+            function setCamEl(el) {
+                el = Math.min(1.2, Math.max(-0.5, el)); window.__paintEl = el;
+                const R = window.__paintR || 6.84;
+                if (typeof lobbyCamera !== "undefined" && lobbyCamera) { lobbyCamera.position.set(0, 1.7 + R * Math.sin(el), R * Math.cos(el)); lobbyCamera.lookAt(0, 1.7, 0); }
+            }
+            const paintOpen = () => !screen.classList.contains("hidden");
+            document.addEventListener("pointerdown", e => {
+                if (!paintOpen() || e.target.closest(".paint-panel")) return;
+                if (e.button === 2) { rot3d = true; rotX = e.clientX; rotY = e.clientY; e.preventDefault(); return; }
+                if (e.button !== 0) return;
+                const h = pick3D(e);
+                if (!h) { rot3d = true; rotX = e.clientX; rotY = e.clientY; return; } // 何もない所をドラッグで回転
+                e.preventDefault(); e.stopPropagation();
+                if (h.layer !== layer) setLayer(h.layer);
+                lastKey = h.key;
+                downAt(h.p);
+                drag3d = drawing;
+            }, true);
+            document.addEventListener("pointermove", e => {
+                if (!paintOpen()) return;
+                if (rot3d) { window.__paintRot = (window.__paintRot || 0) + (e.clientX - rotX) * 0.012; setCamEl((window.__paintEl || 0.1) + (e.clientY - rotY) * 0.006); rotX = e.clientX; rotY = e.clientY; return; }
+                const h = pick3D(e);
+                if (!e.target.closest(".paint-panel")) posEl.innerText = h ? ("3D " + h.layer + " X:" + h.p.x + " Y:" + h.p.y) : "";
+                if (!drag3d || !h) return;
+                if (h.layer !== layer) { endStroke(); setLayer(h.layer); downAt(h.p); drag3d = drawing; lastKey = h.key; return; }
+                moveAt(h.p, h.key === lastKey); // 面をまたいだら線で結ばず1点だけ塗る
+                lastKey = h.key;
+            }, true);
+            const end3d = () => { if (drag3d) { drag3d = false; endStroke(); } rot3d = false; };
+            document.addEventListener("pointerup", end3d, true);
+            document.addEventListener("pointercancel", end3d, true);
+            document.addEventListener("wheel", e => {
+                if (!paintOpen() || typeof lobbyCamera === "undefined" || !lobbyCamera || e.target.closest(".paint-panel")) return;
+                window.__paintR = Math.min(9, Math.max(3.2, (window.__paintR || 6.84) + e.deltaY * 0.004)); setCamEl(window.__paintEl || 0.1);
+            }, { passive: true });
+            document.getElementById("paintRotL").addEventListener("click", () => { window.__paintRot = (window.__paintRot || 0) - 0.5; });
+            document.getElementById("paintUp").addEventListener("click", () => setCamEl((window.__paintEl || 0.1) + 0.15));
+            document.getElementById("paintDown").addEventListener("click", () => setCamEl((window.__paintEl || 0.1) - 0.15));
+            document.getElementById("paintRotR").addEventListener("click", () => { window.__paintRot = (window.__paintRot || 0) + 0.5; });
+
             colorInput.addEventListener("input", () => setColor(colorInput.value));
             hexInput.addEventListener("change", () => {
                 let v = hexInput.value.trim();
@@ -5680,15 +5898,17 @@
                 if (/^#[0-9a-fA-F]{6}$/.test(v)) setColor(v); else hexInput.value = color;
             });
             document.querySelectorAll("#paintToolRow [data-tool]").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
-            document.querySelectorAll("#screenPaint [data-layer]").forEach(b => b.addEventListener("click", () => setLayer(b.dataset.layer)));
+            const partSel = document.getElementById("paintPartSel");
+            SKIN_PARTS.forEach(p => { const o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; partSel.appendChild(o); });
+            partSel.addEventListener("change", () => setLayer(partSel.value));
             document.getElementById("paintUndoBtn").addEventListener("click", undo);
             document.getElementById("paintResetLayerBtn").addEventListener("click", () => {
                 pushUndo();
-                const c = ctx(); c.fillStyle = SKIN_BASE_HEX[layer]; c.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE);
-                refresh(); live(); saveSkinToStorage(); setMsg("この面を初期色に戻しました");
+                const c = ctx(); c.fillStyle = SKIN_BASE_HEX[layer]; c.fillRect(0, 0, SKIN_W, SKIN_H);
+                refresh(); live(); saveSkinToStorage(); setMsg("このパーツを初期色に戻しました");
             });
             document.getElementById("paintResetAllBtn").addEventListener("click", () => {
-                SKIN_LAYERS.forEach(k => { const c = paintCanvases[k].getContext("2d"); c.fillStyle = SKIN_BASE_HEX[k]; c.fillRect(0, 0, SKIN_SIZE, SKIN_SIZE); });
+                SKIN_LAYERS.forEach(k => { const c = paintCanvases[k].getContext("2d"); c.fillStyle = SKIN_BASE_HEX[k]; c.fillRect(0, 0, SKIN_W, SKIN_H); });
                 undoStack.length = 0;
                 refresh();
                 try { localStorage.removeItem(STORAGE_KEY_SKIN); } catch (e) {}
@@ -5701,11 +5921,14 @@
                 screen.classList.remove("hidden");
                 setUIScreen("PAINT");
                 refresh();
+                window.__paintRot = 0; window.__paintR = 6.84; window.__paintEl = 0.1;
                 if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applySkinCanvases(lobbyBotGroup, mySkin ? paintCanvases : null);
             }
             function closePaint() {
                 screen.classList.add("hidden");
-                drawing = false;
+                drawing = false; drag3d = false; rot3d = false;
+                window.__paintRot = undefined;
+                if (typeof lobbyCamera !== "undefined" && lobbyCamera) { lobbyCamera.position.set(0, 2.4, 6.8); lobbyCamera.lookAt(0, 1.7, 0); }
                 setUIScreen("MENU");
             }
             document.getElementById("openPaintBtn").addEventListener("click", openPaint);
@@ -5769,6 +5992,23 @@
 
             botGroup.userData.armorMaterials = [armorPrimary, armorTrim];
             botGroup.userData.partMeshes = partMeshes;
+            botGroup.userData.skinMats = {};
+            // パーツ専用マテリアル＋6面を3x2アトラスに割当（面ごとに別の絵を塗れる）
+            const tagSkin = (mesh, key) => {
+                mesh.material = mesh.material.clone();
+                mesh.userData.skinPart = key;
+                botGroup.userData.skinMats[key] = mesh.material;
+                const uv = mesh.geometry.attributes.uv;
+                for (let f = 0; f < 6; f++) {
+                    const col = f % 3, row = Math.floor(f / 3);
+                    for (let v = 0; v < 4; v++) {
+                        const i = f * 4 + v;
+                        uv.setXY(i, (col + uv.getX(i)) / 3, 1 - (row + 1) / 2 + uv.getY(i) / 2);
+                    }
+                }
+                uv.needsUpdate = true;
+                botGroup.userData.armorMaterials = Object.values(botGroup.userData.skinMats);
+            };
             botGroup.userData.allHitBoxes = [hitBoxMesh, headHitBox, armHitBoxR, armHitBoxL, legHitBox];
 
             // 脚部（大腿・膝関節・脛アーマー・ブーツ）
@@ -5776,7 +6016,7 @@
                 const thigh = regPart("LEG", new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.75, 10), frameDark));
                 thigh.position.set(lx, 1.05, 0);
                 botGroup.add(thigh);
-                const thighPlate = regPart("LEG", new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.55, 0.38), armorPrimary));
+                const thighPlate = regPart("LEG", new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.55, 0.38), armorPrimary)); tagSkin(thighPlate, lx < 0 ? "thighR" : "thighL");
                 thighPlate.position.set(lx, 1.05, -0.04);
                 botGroup.add(thighPlate);
 
@@ -5785,7 +6025,7 @@
                 knee.position.set(lx, 0.66, -0.06);
                 botGroup.add(knee);
 
-                const shin = regPart("LEG", new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.62, 0.40), armorTrim));
+                const shin = regPart("LEG", new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.62, 0.40), armorTrim)); tagSkin(shin, lx < 0 ? "shinR" : "shinL");
                 shin.position.set(lx, 0.34, -0.02);
                 botGroup.add(shin);
 
@@ -5804,16 +6044,16 @@
             botGroup.add(abdomen);
 
             // 胸部メイン装甲＋アークリアクター＋襟アーマー
-            const chestCore = regPart("CHEST", new THREE.Mesh(new THREE.BoxGeometry(1.52, 1.05, 0.96), armorPrimary));
+            const chestCore = regPart("CHEST", new THREE.Mesh(new THREE.BoxGeometry(1.52, 1.05, 0.96), armorPrimary)); tagSkin(chestCore, "chest");
             chestCore.position.y = 2.38;
             botGroup.add(chestCore);
 
-            const chestPlateL = regPart("CHEST", new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.68, 0.22), armorTrim));
+            const chestPlateL = regPart("CHEST", new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.68, 0.22), armorTrim)); tagSkin(chestPlateL, "plateR");
             chestPlateL.position.set(-0.42, 2.45, -0.45);
             chestPlateL.rotation.y = 0.14;
             botGroup.add(chestPlateL);
 
-            const chestPlateR = regPart("CHEST", new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.68, 0.22), armorTrim));
+            const chestPlateR = regPart("CHEST", new THREE.Mesh(new THREE.BoxGeometry(0.58, 0.68, 0.22), armorTrim)); tagSkin(chestPlateR, "plateL");
             chestPlateR.position.set(0.42, 2.45, -0.45);
             chestPlateR.rotation.y = -0.14;
             botGroup.add(chestPlateR);
@@ -5829,9 +6069,9 @@
             // 頭部ヘルメット＋発光タクティカルバイザー＋通信アンテナ
             const headGroup = new THREE.Group();
             headGroup.position.y = 3.16;
-            const helmet = regPart("HEAD", new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.66, 0.80), armorPrimary));
+            const helmet = regPart("HEAD", new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.66, 0.80), armorPrimary)); tagSkin(helmet, "helmet");
             headGroup.add(helmet);
-            const helmetCrest = regPart("HEAD", new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.84), armorTrim));
+            const helmetCrest = regPart("HEAD", new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.12, 0.84), armorTrim)); tagSkin(helmetCrest, "crest");
             helmetCrest.position.set(0, 0.34, 0);
             headGroup.add(helmetCrest);
             const visor = new THREE.Mesh(new THREE.BoxGeometry(0.80, 0.22, 0.44), visorMat);
@@ -5854,14 +6094,14 @@
                 // 対戦・訓練場用：両腕が肩から肘・前腕まで途切れず銃を支えるポーズ（正面は -Z）
                 const rightShoulderGrp = new THREE.Group();
                 rightShoulderGrp.position.set(-0.92, 2.68, 0);
-                const pauldronR = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.58), armorTrim));
+                const pauldronR = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.58), armorTrim)); tagSkin(pauldronR, "shoulderR");
                 pauldronR.rotation.z = 0.18;
                 rightShoulderGrp.add(pauldronR);
                 const upperArmR = regPart("ARM", new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.56, 10), frameDark));
                 upperArmR.position.set(0.14, -0.22, -0.18);
                 upperArmR.rotation.set(0.68, 0, -0.32);
                 rightShoulderGrp.add(upperArmR);
-                const forearmR = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.52), armorPrimary));
+                const forearmR = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.52), armorPrimary)); tagSkin(forearmR, "forearmR");
                 forearmR.position.set(0.32, -0.42, -0.46);
                 forearmR.rotation.set(0.12, -0.24, 0);
                 rightShoulderGrp.add(forearmR);
@@ -5869,14 +6109,14 @@
 
                 const leftShoulderGrp = new THREE.Group();
                 leftShoulderGrp.position.set(0.92, 2.68, 0);
-                const pauldronL = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.58), armorTrim));
+                const pauldronL = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.58), armorTrim)); tagSkin(pauldronL, "shoulderL");
                 pauldronL.rotation.z = -0.18;
                 leftShoulderGrp.add(pauldronL);
                 const upperArmL = regPart("ARM", new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.64, 10), frameDark));
                 upperArmL.position.set(-0.34, -0.22, -0.36);
                 upperArmL.rotation.set(0.92, 0, 0.62);
                 leftShoulderGrp.add(upperArmL);
-                const forearmL = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.21, 0.64), armorPrimary));
+                const forearmL = regPart("ARM", new THREE.Mesh(new THREE.BoxGeometry(0.21, 0.21, 0.64), armorPrimary)); tagSkin(forearmL, "forearmL");
                 forearmL.position.set(-0.94, -0.42, -0.86);
                 forearmL.rotation.set(0.08, 0.62, 0);
                 leftShoulderGrp.add(forearmL);
@@ -5895,14 +6135,14 @@
                 [-0.96, 0.96].forEach((sx, idx) => {
                     const sGrp = new THREE.Group();
                     sGrp.position.set(sx, 2.68, 0);
-                    const pauldron = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.58), armorTrim);
+                    const pauldron = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.44, 0.58), armorTrim); tagSkin(pauldron, idx === 0 ? "shoulderR" : "shoulderL");
                     pauldron.rotation.z = idx === 0 ? 0.18 : -0.18;
                     sGrp.add(pauldron);
                     const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.13, 0.62, 10), frameDark);
                     upperArm.position.set(idx === 0 ? -0.06 : 0.06, -0.34, 0);
                     upperArm.rotation.z = idx === 0 ? -0.12 : 0.12;
                     sGrp.add(upperArm);
-                    const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.58, 0.26), armorPrimary);
+                    const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.58, 0.26), armorPrimary); tagSkin(forearm, idx === 0 ? "forearmR" : "forearmL");
                     forearm.position.set(idx === 0 ? -0.12 : 0.12, -0.82, 0);
                     sGrp.add(forearm);
                     const hand = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.22, 0.24), frameDark);
@@ -8627,7 +8867,7 @@ ${shader.vertexShader}`.replace(
             adsHoldKey = false;
             if (camera) { camera.fov = 75; camera.updateProjectionMatrix(); }
             if (crosshair) crosshair.style.opacity = "1.0";
-            roundActive = false; currentAmmo = maxAmmo; isReloading = false; myShield = 100; myHp = 100; updateVitalsHud();
+            roundActive = false; currentAmmo = maxAmmo; isReloading = false; myShield = 100; myHp = 100; updateVitalsHud(); resetMedkit();
             isCrouching = false; currentCameraTargetHeight = 2.2 * CHAR_SCALE; currentContinuousShots = 0; hitPunchIntensity = 0.0;
             playerInjuryState.legTimer = 0;
             playerInjuryState.armTimer = 0;
@@ -9026,6 +9266,19 @@ ${shader.vertexShader}`.replace(
             }
         }
         function onWindowResize() { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); }
+        let healCharges = 1, healUsing = false, healTimer = null;
+        function updateHealHud() { const el = document.getElementById("heal-panel"); if (el) el.innerText = healUsing ? "＋ 使用中…" : `＋ MEDKIT [H] ×${healCharges}`; }
+        function useMedkit() {
+            if (!roundActive || healUsing || healCharges <= 0 || myHp >= 100) return;
+            healUsing = true; healCharges--; updateHealHud();
+            healTimer = setTimeout(() => {
+                healUsing = false;
+                if (roundActive && myHp > 0) { myHp = Math.min(100, myHp + 50); updateVitalsHud(); playSynthSound("reload"); }
+                updateHealHud();
+            }, 1500);
+        }
+        function resetMedkit() { clearTimeout(healTimer); healUsing = false; healCharges = 1; updateHealHud(); }
+        window.addEventListener('keydown', (e) => { if (e.code === "KeyH" && !e.repeat && currentUIScreen === "GAME") useMedkit(); });
         function updateVitalsHud() {
             shieldBar.style.width = `${myShield}%`;
             shieldTxt.innerText = Math.ceil(myShield);
