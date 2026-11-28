@@ -1163,17 +1163,17 @@
         /* ===== キャラ塗装（1ピクセル）===== */
         #screenPaint { position: fixed; inset: 0; z-index: 70; display: flex; pointer-events: none; }
         #screenPaint.hidden { display: none !important; }
-        .paint-panel { pointer-events: auto; width: 440px; max-width: 100%; height: 100%; overflow-y: auto; padding: 14px 16px 18px;
+        .paint-panel { pointer-events: auto; width: 520px; max-width: 100%; height: 100%; overflow-y: auto; padding: 14px 16px 18px;
             background: rgba(10, 14, 22, 0.94); border-right: 2px solid #00f0ff; color: #f8fafc; }
         .paint-head { display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron', sans-serif; font-size: 14px; letter-spacing: 1.5px; color: #00f0ff; margin-bottom: 10px; }
         .paint-btn { background: rgba(30,36,44,.95); border: 1px solid #475569; color: #f8fafc; padding: 7px 12px; font-size: 13px; font-weight: 700; cursor: pointer; font-family: inherit; }
         .paint-btn:hover { border-color: #00f0ff; }
         .paint-btn.active { background: #0e7490; border-color: #00f0ff; }
         .paint-row { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; align-items: center; }
-        .paint-canvas-wrap { position: relative; width: min(420px, 86vw); aspect-ratio: 3 / 2; margin: 8px 0; border: 2px solid #475569;
-            background: #1e293b; touch-action: none; }
-        #paintCanvas { width: 100%; height: 100%; display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: crosshair; }
-        .paint-grid { position: absolute; inset: 0; pointer-events: none;
+        .paint-canvas-wrap { position: relative; width: 100%; max-height: min(50vh, 420px); overflow: auto; margin: 8px 0; border: 2px solid #475569;
+            background: #1e293b; }
+        #paintCanvas { width: 100%; height: auto; display: block; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; cursor: crosshair; }
+        .paint-grid { display: none !important; position: absolute; inset: 0; pointer-events: none;
             background-image: linear-gradient(to right, rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.16) 1px, transparent 1px);
             background-size: calc(100% / 96) calc(100% / 64); }
         #paintColor { width: 54px; height: 38px; border: 1px solid #94a3b8; background: none; padding: 0; cursor: pointer; }
@@ -1181,7 +1181,7 @@
         .paint-swatch { width: 24px; height: 24px; border: 1px solid #94a3b8; cursor: pointer; }
         .paint-swatch:hover { outline: 2px solid #00f0ff; }
         #paintMsg { font-size: 12px; color: #6ee7b7; min-height: 16px; }
-        @media (max-width: 900px) { #screenPaint { background: rgba(7, 11, 20, 0.96); } .paint-panel { width: 100%; border-right: none; } }
+        @media (max-width: 900px) { #screenPaint { background: none; align-items: flex-end; } .paint-panel { width: 100%; height: 50%; border-right: none; border-top: 2px solid #00f0ff; } }
 </style>
 </head>
 <body>
@@ -1529,6 +1529,7 @@
                 <h2 id="lobbyRoomName">MATCH LOBBY</h2>
                 <div id="lobbyTimer" class="timer-badge">AUTO START: 10s</div>
             </div>
+            <div id="friendWaitMsg" class="hidden" style="margin:10px 0 0;padding:8px 12px;background:rgba(14,116,144,.25);border-left:3px solid #00f0ff;font-size:13px;font-weight:700;color:#e2e8f0;">相手を待っています…</div>
             <div class="lobby-arena-vs">
                 <div id="myPlayerCard" class="player-card p1-card">
                     <div class="role-tag">OPERATOR 01</div>
@@ -1709,12 +1710,30 @@
             <div class="paint-row">
                 <select id="paintPartSel" class="paint-btn" style="flex:1"></select>
             </div>
-            <div class="paint-canvas-wrap"><canvas id="paintCanvas" width="96" height="64"></canvas><div class="paint-grid"></div></div>
+            <div class="paint-row" id="paintViewRow">
+                <span style="font-size:12px;color:#94a3b8;">視点:</span>
+                <button id="paintZoomIn" class="paint-btn">🔍＋ 拡大</button>
+                <button id="paintZoomOut" class="paint-btn">🔍－ 縮小</button>
+                <button id="paintFocusPart" class="paint-btn">このパーツに寄る</button>
+                <button id="paintViewAll" class="paint-btn">全身</button>
+                <button id="paintGridBtn" class="paint-btn active">ピクセル枠 ON</button>
+            </div>
+            <div class="paint-canvas-wrap"><canvas id="paintCanvas" width="768" height="512"></canvas><div class="paint-grid"></div></div>
+            <div class="paint-row" id="paint2dZoomRow"><span style="font-size:12px;color:#94a3b8;">展開図の拡大:</span><button class="paint-btn active" data-z="1">×1</button><button class="paint-btn" data-z="2">×2</button><button class="paint-btn" data-z="3">×3</button></div>
             <div class="paint-row" id="paintToolRow">
                 <button class="paint-btn active" data-tool="pen">ペン</button>
                 <button class="paint-btn" data-tool="eraser">消しゴム</button>
                 <button class="paint-btn" data-tool="picker">スポイト</button>
                 <button class="paint-btn" data-tool="fill">塗りつぶし</button>
+                <button class="paint-btn" data-tool="rotate">✋ 回転</button>
+            </div>
+            <div class="paint-row" id="paintSizeRow">
+                <span style="font-size:12px;color:#94a3b8;">太さ</span>
+                <button class="paint-btn active" data-size="1">1px</button>
+                <button class="paint-btn" data-size="2">2px</button>
+                <button class="paint-btn" data-size="3">3px</button>
+                <button class="paint-btn" data-size="5">5px</button>
+                <span style="font-size:11px;color:#94a3b8;">キー: B ペン / E 消し / I スポイト / G 塗りつぶし / [ ] 太さ</span>
             </div>
             <div class="paint-row">
                 <input type="color" id="paintColor" value="#ff3b30">
@@ -1729,7 +1748,8 @@
                 <button id="paintResetLayerBtn" class="paint-btn">このパーツを初期色に</button>
                 <button id="paintResetAllBtn" class="paint-btn">全て初期化</button>
             </div>
-            <div style="font-size:11px; color:#94a3b8; line-height:1.5;">右のキャラを直接クリック／ドラッグすると、その場所の1ピクセルを塗れます。パーツごと・面ごとに別々の32x32です（上の枠は 左から +X側・-X側・上 / 下・後ろ・前 の6面）。キャラ以外の場所をドラッグ（または右ドラッグ）で回転、ホイールでズーム、▲▼◀▶ボタンでも回せます。描いた内容は自動保存され、対戦相手にも表示されます。右側のロビーのキャラにリアルタイム反映されます。（PC: Ctrl+Z で元に戻す / Esc で閉じる）</div>
+            <div style="margin:8px 0;padding:8px 10px;background:rgba(14,116,144,.25);border-left:3px solid #00f0ff;font-size:13px;line-height:1.7;color:#e2e8f0;"><b>かんたん操作</b><br>① 色を選ぶ（パレット／カラー）<br>② <b>キャラを直接クリック／ドラッグ</b>で塗る。<b>白い枠＝塗られる1ピクセル</b>（キャラ表面のマス目が1ピクセル）<br>③ 拡大：<b>マウスホイール</b>／🔍ボタン／「このパーツに寄る」　回転：<b>右ドラッグ</b>か「✋回転」　移動：<b>Shift＋ドラッグ</b>（スマホはピンチで拡大）</div>
+            <div style="font-size:11px; color:#94a3b8; line-height:1.5;">パーツごと・面ごとに別々の32x32です。上の展開図は 左から +X側・-X側・上 / 下・後ろ・前 の6面で、マス目の1つが1ピクセルです。描いた内容は自動保存され、対戦相手にも表示されます。（Ctrl+Z で元に戻す / Esc で閉じる）</div>
             <div id="paintMsg"></div>
         </div>
     </div>
@@ -2105,6 +2125,11 @@
                     id: "knife", name: "タクティカルナイフ (KNIFE)", sub: "SUB WEAPON // MELEE & DASH", price: 0, weight: -0.25,
                     effectLabel: "近接75DMG / HS120DMG / 移動+15%",
                     desc: "軽量カーボンブレードの近接戦闘用コンバットナイフ。装備中は移動速度が大幅に上昇し、左クリックやGキーで超ワイド高速斬撃（射程8.8m・回数無制限）を繰り出せる。"
+                },
+                {
+                    id: "bandage", name: "包帯 (BANDAGE)", sub: "SUB WEAPON // FIELD MEDIC", price: 0, weight: 0.05,
+                    effectLabel: "HP+20 / 部位破壊も修復 / 使用3秒 ×3",
+                    desc: "使用に3秒かかる応急処置キット。HPを20回復し、脚・腕の部位破壊（煙・デバフ）も修復する（3個所持）。使用中は移動速度が下がり、射撃・リロードで中断される。"
                 },
                 {
                     id: "hound", name: "ハウンド（誘導弾）", sub: "SUB WEAPON // TRION CUBES", price: 290, weight: 0.25,
@@ -3205,6 +3230,8 @@
                     return `<svg width="36" height="36" viewBox="0 0 36 36"><ellipse cx="18" cy="26" rx="12" ry="5" fill="#f59e0b"/><path d="M18 7 L25 16 L21 16 L21 23 L15 23 L15 16 L11 16 Z" fill="#00f0ff"/></svg>`;
                 } else if (id === "smoke") {
                     return `<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="15" cy="20" r="8" fill="#cbd5e1"/><circle cx="22" cy="18" r="7" fill="#94a3b8"/><rect x="14" y="8" width="8" height="6" fill="#38bdf8"/></svg>`;
+                } else if (id === "bandage") {
+                    return `<svg width="36" height="36" viewBox="0 0 36 36"><rect x="4" y="13" width="28" height="10" rx="5" fill="#f1e4c8" stroke="#94a3b8" stroke-width="1.5" transform="rotate(-30 18 18)"/><rect x="14" y="14.5" width="8" height="7" fill="#ef4444" transform="rotate(-30 18 18)"/></svg>`;
                 } else if (id === "sensor") {
                     return `<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="14" r="6" fill="#ff2a5f"/><line x1="18" y1="20" x2="18" y2="32" stroke="#94a3b8" stroke-width="3"/><circle cx="18" cy="14" r="11" fill="none" stroke="#ff2a5f" stroke-width="1.5" stroke-dasharray="3 2"/></svg>`;
                 }
@@ -3854,7 +3881,15 @@
                 if (!/^\d{4}$/.test(code)) { screenMenu.classList.remove("hidden"); document.getElementById("lobbyCanvas").classList.remove("hidden"); showToast("4桁の数字を入力してください"); return; }
                 friendCode = code;
             } else { friendCode = null; }
-            if (selectedLobbyMode === "1V1" || selectedLobbyMode === "FRIEND") {
+            if (selectedLobbyMode === "FRIEND") {
+                // フレンドマッチ：参加したらすぐロビーで待機（訓練場には入らない）
+                isTrainingMode = false;
+                isNpcBattleMode = false;
+                isMatchmakingTraining = true; // 検索中フラグ（名前は旧仕様のまま）
+                friendLobbyWait = true;
+                showFriendWaitLobby();
+                startMatching();
+            } else if (selectedLobbyMode === "1V1") {
                 // マッチング待機中も訓練場でエイム練習できるようにする
                 isTrainingMode = true;
                 isNpcBattleMode = false;
@@ -4037,7 +4072,7 @@
             }
             netSyncLastSent = now;
             try {
-                activeConn.send({ type: "GAME_SYNC", pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, rotY: euler.y, snap: !!force });
+                activeConn.send({ type: "GAME_SYNC", pos: { x: camera.position.x, y: camera.position.y, z: camera.position.z }, rotY: euler.y, snap: !!force, brk: myBrkFlags() });
             } catch (e) {}
         }
         function updateEnemyInterpolation(dt) {
@@ -4061,12 +4096,41 @@
         const MAX_SCAN_ROOMS = 4;
         let friendCode = null;
         let friendPeerInLobby = false;
+        let friendLobbyWait = false; // フレンドマッチ：相手待ちの間も訓練場ではなくロビーに居る
+        function setWaitMsg(msg) {
+            const el = document.getElementById("friendWaitMsg");
+            if (el && friendLobbyWait) el.innerText = msg;
+        }
+        function showFriendWaitLobby() {
+            clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null;
+            amIReady = false; isEnemyReady = false; gameStarted = false; friendPeerInLobby = false; matchPerfectEnded = false;
+            enemyPlayerName = "OPPONENT";
+            readyBtn.classList.remove("is-ready");
+            myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
+            enemyStatusInd.innerText = "WAITING"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
+            screenMatching.classList.add("hidden"); screenResult.classList.add("hidden");
+            document.getElementById("matchmaking-range-banner").classList.add("hidden");
+            document.getElementById("lobbyCanvas").classList.add("hidden");
+            document.getElementById("lobbyRoomName").innerText = `FRIEND ${friendCode} // 待機中`;
+            document.getElementById("lobbyMyName").innerText = myPlayerName;
+            document.getElementById("lobbyEnemyName").innerText = "相手を待っています…";
+            lobbyTimerEl.innerText = "FRIEND ROOM";
+            document.getElementById("friendWaitMsg").classList.remove("hidden");
+            document.getElementById("friendWaitMsg").innerText = `フレンドコード ${friendCode} で相手を待っています…（相手に同じ4桁を入力してもらってください）`;
+            document.getElementById("leaveLobbyBtn").innerText = "やめてメニューへ戻る";
+            screenLobby.classList.remove("hidden");
+            setUIScreen("LOBBY");
+            refreshReadyBtn();
+        }
         function refreshReadyBtn() {
             if (friendCode) {
                 readyBtn.disabled = !friendPeerInLobby;
-                readyBtn.innerText = friendPeerInLobby ? "プレイ" : "相手の参加待ち…";
-                if (friendPeerInLobby) { enemyStatusInd.innerText = "JOINED"; enemyStatusInd.classList.add("ready"); enemyPlayerCard.classList.add("card-ready"); }
-                myStatusInd.innerText = "JOINED"; myStatusInd.classList.add("ready"); myPlayerCard.classList.add("card-ready");
+                readyBtn.innerText = !friendPeerInLobby ? "相手の参加待ち…" : (amIReady ? "待機完了 ✓（取消）" : "待機完了");
+                readyBtn.classList.toggle("is-ready", !!amIReady);
+                myStatusInd.innerText = amIReady ? "READY" : "JOINED"; myStatusInd.classList.add("ready"); myPlayerCard.classList.add("card-ready");
+                if (friendPeerInLobby) {
+                    enemyStatusInd.innerText = isEnemyReady ? "READY" : "JOINED"; enemyStatusInd.classList.add("ready"); enemyPlayerCard.classList.add("card-ready");
+                }
             } else {
                 readyBtn.disabled = false;
                 readyBtn.innerText = "READY / 準備完了";
@@ -4098,6 +4162,7 @@
                 statusEl.innerText = message;
                 const el = document.getElementById("mm-range-status");
                 if (el) el.innerText = message;
+                setWaitMsg(message);
             };
 
             const destroyPeer = (target) => {
@@ -4273,6 +4338,7 @@
                 statusEl.innerText = "AWAITING OPPONENT...";
                 const el = document.getElementById("mm-range-status");
                 if (el) el.innerText = friendCode ? `フレンドコード ${friendCode} で相手を待機中` : `ROOM ${currentRoomNumber} で対戦相手を待機中（見つかるまでエイム練習可能）`;
+                if (friendCode) setWaitMsg(`フレンドコード ${friendCode} で相手を待っています…（相手に同じ4桁を入力してもらってください）`);
                 scheduleRescan();
             });
             hostPeer.on('disconnected', () => { try { if (!hostPeer.destroyed) hostPeer.reconnect(); } catch (e) {} });
@@ -4326,22 +4392,28 @@
 
         function goToLobby(conn, role) {
             if (isMatchmakingTraining) {
+                const wasLobbyWait = friendLobbyWait;
                 isMatchmakingTraining = false;
                 isTrainingMode = false;
+                friendLobbyWait = false;
                 document.getElementById("matchmaking-range-banner").classList.add("hidden");
-                crosshair.classList.add("hidden");
-                hudContainer.classList.add("hidden");
-                rangeHud.classList.add("hidden");
-                roundOverlay.innerText = "";
-                cleanup3DGame();
+                if (!wasLobbyWait) {
+                    crosshair.classList.add("hidden");
+                    hudContainer.classList.add("hidden");
+                    rangeHud.classList.add("hidden");
+                    roundOverlay.innerText = "";
+                    cleanup3DGame();
+                }
             }
+            document.getElementById("friendWaitMsg").classList.add("hidden");
+            document.getElementById("leaveLobbyBtn").innerText = "メニューへ戻る";
             clearInterval(lobbyTimerInterval);
             clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             amIReady = false; isEnemyReady = false; gameStarted = false;
             refreshReadyBtn(); readyBtn.classList.remove("is-ready");
             myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
             enemyStatusInd.innerText = "NOT READY"; enemyStatusInd.classList.remove("ready"); enemyPlayerCard.classList.remove("card-ready");
-            enemyPlayerName = "OPPONENT"; friendPeerInLobby = false;
+            enemyPlayerName = "OPPONENT"; friendPeerInLobby = !!friendCode;
             activeConn = conn; screenMatching.classList.add("hidden"); screenLobby.classList.remove("hidden"); matchPerfectEnded = false;
             document.getElementById("lobbyRoomName").innerText = friendCode ? `FRIEND ${friendCode} // ${role}` : `ROOM ${currentRoomNumber} // ${role}`;
             document.getElementById("lobbyMyName").innerText = myPlayerName;
@@ -4446,6 +4518,11 @@
 
         function resetToMenu() {
             matchmakingAttemptId++;
+            isMatchmakingTraining = false; friendLobbyWait = false;
+            { const fw = document.getElementById("friendWaitMsg"); if (fw) fw.classList.add("hidden"); }
+            document.getElementById("leaveLobbyBtn").innerText = "メニューへ戻る";
+            screenLobby.classList.add("hidden");
+            document.getElementById("matchmaking-range-banner").classList.add("hidden");
             clearInterval(lobbyTimerInterval); clearInterval(matchCountdownInterval); matchCountdownInterval = null;
             clearInterval(pingIntervalToken); clearInterval(nameSyncInterval);
             if (activeConn) { activeConn.close(); activeConn = null; } if (peer) { peer.destroy(); peer = null; }
@@ -4464,24 +4541,22 @@
         function startLobbyTimer() { lobbyTimeoutCount = 10; clearInterval(lobbyTimerInterval); if (friendCode) { lobbyTimerEl.innerText = "FRIEND ROOM"; return; } lobbyTimerInterval = setInterval(() => { lobbyTimeoutCount--; lobbyTimerEl.innerText = `AUTO START: ${lobbyTimeoutCount}s`; if (lobbyTimeoutCount <= 0) { clearInterval(lobbyTimerInterval); startMatchCountdown(); } }, 1000); }
         
         readyBtn.addEventListener('click', () => { 
-            if (friendCode) {
-                if (!activeConn || !activeConn.open || !friendPeerInLobby) return;
-                try { activeConn.send({ type: "FRIEND_START" }); } catch (e) {}
-                startMatchCountdown();
-                return;
-            }
-            amIReady = !amIReady; readyBtn.innerText = amIReady ? "CANCEL READY" : "READY / 準備完了"; 
+            if (friendCode && (!activeConn || !activeConn.open || !friendPeerInLobby)) return;
+            amIReady = !amIReady; if (!friendCode) readyBtn.innerText = amIReady ? "CANCEL READY" : "READY / 準備完了"; 
             if (amIReady) {
                 readyBtn.classList.add("is-ready"); myStatusInd.innerText = "READY"; myStatusInd.classList.add("ready"); myPlayerCard.classList.add("card-ready");
             } else {
                 readyBtn.classList.remove("is-ready"); myStatusInd.innerText = "NOT READY"; myStatusInd.classList.remove("ready"); myPlayerCard.classList.remove("card-ready");
             } 
-            if (activeConn && activeConn.open) activeConn.send({ type: "READY_CHANGE", isReady: amIReady, name: myPlayerName }); checkDirectStart(); 
+            if (activeConn && activeConn.open) activeConn.send({ type: "READY_CHANGE", isReady: amIReady, name: myPlayerName });
+            if (friendCode) refreshReadyBtn();
+            checkDirectStart(); 
         });
         
         function handleNetworkData(data) {
             if (data.type === "READY_CHANGE" && friendCode) { friendPeerInLobby = true; refreshReadyBtn(); } // READY_CHANGEはロビー内からしか送られない
             if (data.type === "NAME_EXCHANGE") { 
+                if (friendCode && screenLobby && !screenLobby.classList.contains("hidden") && !friendPeerInLobby) { friendPeerInLobby = true; refreshReadyBtn(); }
                 if (data.name) {
                     enemyPlayerName = data.name; 
                     document.getElementById("lobbyEnemyName").innerText = enemyPlayerName; 
@@ -4531,6 +4606,7 @@
                     }
                     enemyNet.x = data.pos.x; enemyNet.y = ty; enemyNet.z = data.pos.z; enemyNet.r = data.rotY;
                 } 
+                enemyBrk = data.brk | 0;
             }
             else if (data.type === "GAME_SHOOT") {
                 const fromV = new THREE.Vector3().copy(data.from);
@@ -5151,6 +5227,7 @@
                     }
                     return;
                 }
+                if (gId === "bandage") { startBandage(); return; }
                 if (myGrenadesLeft > 0) {
                     isCookingGrenade = true;
                     isShooting = false;
@@ -5686,27 +5763,88 @@
             const hexInput = document.getElementById("paintHex");
             const posEl = document.getElementById("paintPos");
             const msgEl = document.getElementById("paintMsg");
-            let layer = "helmet", tool = "pen", color = "#ff3b30";
+            let layer = "helmet", tool = "pen", color = "#ff3b30", brush = 1, hoverPx = null, hoverLayer = null;
+            const PS = 8; let gridOn = true, paintActive = false;
+            const gridCanv = {}; const dirty = new Set();
+            SKIN_LAYERS.forEach(k => { const c = document.createElement("canvas"); c.width = SKIN_W * PS; c.height = SKIN_H * PS; gridCanv[k] = c; });
             let drawing = false, lastPx = null, changed = false, liveQueued = false;
             const undoStack = [];
             const recent = [];
             const PALETTE = ["#000000","#1e272e","#57606f","#a4b0be","#ffffff","#d63031","#ff3b30","#ff9f1a","#ffd32a","#a3e635","#2ecc71","#00f0ff","#3b82f6","#6c5ce7","#e84393","#8b5a2b"];
 
             const ctx = () => paintCanvases[layer].getContext("2d");
+            function makeOverlay(withFaces) {
+                const c = document.createElement("canvas"); c.width = SKIN_W * PS; c.height = SKIN_H * PS;
+                const g = c.getContext("2d");
+                for (let x = 0; x < SKIN_W; x++) {
+                    const major = x % 8 === 0;
+                    g.fillStyle = major ? "rgba(0,0,0,.6)" : "rgba(0,0,0,.3)"; g.fillRect(x * PS, 0, 1, c.height);
+                    g.fillStyle = major ? "rgba(255,255,255,.4)" : "rgba(255,255,255,.15)"; g.fillRect(x * PS + 1, 0, 1, c.height);
+                }
+                for (let y = 0; y < SKIN_H; y++) {
+                    const major = y % 8 === 0;
+                    g.fillStyle = major ? "rgba(0,0,0,.6)" : "rgba(0,0,0,.3)"; g.fillRect(0, y * PS, c.width, 1);
+                    g.fillStyle = major ? "rgba(255,255,255,.4)" : "rgba(255,255,255,.15)"; g.fillRect(0, y * PS + 1, c.width, 1);
+                }
+                if (withFaces) {
+                    g.fillStyle = "rgba(0,240,255,.95)";
+                    g.fillRect(32 * PS - 1, 0, 3, c.height); g.fillRect(64 * PS - 1, 0, 3, c.height); g.fillRect(0, 32 * PS - 1, c.width, 3);
+                }
+                return c;
+            }
+            const overlay2d = makeOverlay(true), overlay3d = makeOverlay(false);
+            const FACE_LABELS = ["+X側", "-X側", "上", "下", "後ろ", "前"];
+            function drawHL(g, k) { // いま塗られる場所（ブラシ範囲）を枠で示す
+                if (!(hoverPx && hoverLayer === k)) return;
+                const o = Math.floor(brush / 2), x = (hoverPx.x - o) * PS, y = (hoverPx.y - o) * PS, w = brush * PS;
+                if (tool === "eraser") g.fillStyle = "rgba(255,255,255,.45)";
+                else { const rgb = hexToRgb(color); g.fillStyle = "rgba(" + rgb[0] + "," + rgb[1] + "," + rgb[2] + ",.6)"; }
+                g.fillRect(x, y, w, w);
+                g.lineWidth = 4; g.strokeStyle = "#000"; g.strokeRect(x + 1, y + 1, w - 2, w - 2);
+                g.lineWidth = 2; g.strokeStyle = "#fff"; g.strokeRect(x + 1, y + 1, w - 2, w - 2);
+            }
             function refresh() {
+                const W = SKIN_W * PS, H = SKIN_H * PS;
                 view.imageSmoothingEnabled = false;
-                view.clearRect(0, 0, SKIN_W, SKIN_H);
-                view.drawImage(paintCanvases[layer], 0, 0);
-                view.fillStyle = "rgba(0,240,255,.85)";
-                view.fillRect(31, 0, 1, SKIN_H); view.fillRect(63, 0, 1, SKIN_H); view.fillRect(0, 31, SKIN_W, 1);
+                view.clearRect(0, 0, W, H);
+                view.drawImage(paintCanvases[layer], 0, 0, W, H);
+                view.drawImage(overlay2d, 0, 0);
+                view.font = "bold 15px sans-serif"; view.textBaseline = "top"; view.lineWidth = 3; view.strokeStyle = "rgba(0,0,0,.9)"; view.fillStyle = "#fff";
+                FACE_LABELS.forEach((t, i) => { const x = (i % 3) * 32 * PS + 6, y = Math.floor(i / 3) * 32 * PS + 6; view.strokeText(t, x, y); view.fillText(t, x, y); });
+                drawHL(view, layer);
             }
             refreshPaintView = refresh;
-            function live() {
+            function renderGrid(k) { // 3Dキャラに貼る「マス目つき」テクスチャ
+                const c = gridCanv[k], g = c.getContext("2d");
+                g.imageSmoothingEnabled = false;
+                g.clearRect(0, 0, c.width, c.height);
+                g.drawImage(paintCanvases[k], 0, 0, c.width, c.height);
+                g.drawImage(overlay3d, 0, 0);
+                drawHL(g, k);
+            }
+            function applyView(bot) {
+                if (!bot) return;
+                const useGrid = gridOn && paintActive;
+                if (useGrid) SKIN_LAYERS.forEach(renderGrid);
+                applySkinCanvases(bot, paintActive ? (useGrid ? gridCanv : paintCanvases) : (mySkin ? paintCanvases : null));
+                const st = bot.userData.skinTex || {};
+                if (useGrid) SKIN_LAYERS.forEach(k => { if (st[k]) { st[k].minFilter = THREE.LinearFilter; st[k].magFilter = THREE.NearestFilter; st[k].needsUpdate = true; } });
+            }
+            function live(k) {
+                dirty.add(k || layer);
                 if (liveQueued) return;
                 liveQueued = true;
                 requestAnimationFrame(() => {
                     liveQueued = false;
-                    if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applySkinCanvases(lobbyBotGroup, paintCanvases);
+                    const ls = Array.from(dirty); dirty.clear();
+                    const bot = (typeof lobbyBotGroup !== "undefined") ? lobbyBotGroup : null;
+                    if (!bot) return;
+                    const useGrid = gridOn && paintActive;
+                    if (useGrid) ls.forEach(renderGrid);
+                    const want = useGrid ? gridCanv : paintCanvases;
+                    const st = bot.userData.skinTex || {};
+                    if (!SKIN_LAYERS.every(k2 => st[k2] && st[k2].image === want[k2])) { applyView(bot); return; }
+                    ls.forEach(k2 => { if (st[k2]) st[k2].needsUpdate = true; });
                 });
             }
             function setMsg(t) { msgEl.innerText = t; clearTimeout(setMsg._t); setMsg._t = setTimeout(() => { msgEl.innerText = ""; }, 1800); }
@@ -5762,7 +5900,10 @@
                 if (x < 0 || y < 0 || x >= SKIN_W || y >= SKIN_H) return;
                 const c = ctx();
                 c.fillStyle = (tool === "eraser") ? SKIN_BASE_HEX[layer] : color;
-                c.fillRect(x, y, 1, 1);
+                const o = Math.floor(brush / 2);
+                const x0 = Math.max(0, x - o), y0 = Math.max(0, y - o);
+                const x1 = Math.min(SKIN_W, x - o + brush), y1 = Math.min(SKIN_H, y - o + brush);
+                c.fillRect(x0, y0, x1 - x0, y1 - y0);
                 changed = true;
             }
             function line(a, b) { // ブレゼンハム：ドラッグ中も隙間なく1ピクセル単位で塗る
@@ -5809,6 +5950,7 @@
             }
 
             function downAt(p) {
+                if (tool === "rotate") return;
                 if (tool === "picker") {
                     const px = ctx().getImageData(p.x, p.y, 1, 1).data;
                     setColor(toHex(px[0], px[1], px[2]));
@@ -5846,8 +5988,11 @@
             cv.addEventListener("pointermove", e => {
                 const p = pxFromEvent(e);
                 posEl.innerText = p ? ("X:" + p.x + " Y:" + p.y) : "";
-                moveAt(p, true);
+                hoverPx = p; hoverLayer = p ? layer : null;
+                if (drawing) moveAt(p, true); else refresh();
+                if (gridOn && paintActive) live(layer);
             });
+            cv.addEventListener("pointerleave", () => { if (drawing) return; hoverPx = null; hoverLayer = null; refresh(); if (gridOn && paintActive) live(layer); });
             const endStroke = () => {
                 if (!drawing) return;
                 drawing = false;
@@ -5857,6 +6002,20 @@
             cv.addEventListener("pointerup", endStroke);
             cv.addEventListener("pointercancel", endStroke);
             cv.addEventListener("lostpointercapture", endStroke);
+
+            function setBrush(n) {
+                brush = Math.max(1, Math.min(5, n));
+                document.querySelectorAll("#paintSizeRow [data-size]").forEach(b => b.classList.toggle("active", +b.dataset.size === brush));
+                refresh();
+            }
+            document.querySelectorAll("#paintSizeRow [data-size]").forEach(b => b.addEventListener("click", () => setBrush(+b.dataset.size)));
+            document.addEventListener("keydown", e => {
+                if (screen.classList.contains("hidden") || e.ctrlKey || e.metaKey || e.altKey) return;
+                const t = e.target; if (t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) return;
+                const k = e.key.toLowerCase();
+                if (k === "b") setTool("pen"); else if (k === "e") setTool("eraser"); else if (k === "i") setTool("picker"); else if (k === "g") setTool("fill"); else if (k === "r") setTool("rotate");
+                else if (k === "[") setBrush(brush <= 1 ? 1 : (brush === 5 ? 3 : brush - 1)); else if (k === "]") setBrush(brush === 3 ? 5 : brush + 1);
+            });
 
             // ===== 3Dキャラに直接ペイント（レイキャスト → UV → 1ピクセル） =====
             const rc = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -5874,17 +6033,101 @@
                 if (!hit || !hit.uv || !hit.object.userData.skinPart) return null; // 装甲以外には塗れない
                 const x = Math.min(SKIN_W - 1, Math.max(0, Math.floor(hit.uv.x * SKIN_W)));
                 const y = Math.min(SKIN_H - 1, Math.max(0, Math.floor((1 - hit.uv.y) * SKIN_H)));
-                return { p: { x, y }, layer: hit.object.userData.skinPart, key: hit.object.uuid + ":" + (hit.faceIndex >> 1) };
+                return { p: { x, y }, layer: hit.object.userData.skinPart, key: hit.object.uuid + ":" + (hit.faceIndex >> 1),
+                    pt: hit.point.clone(), nrm: hit.face ? hit.face.normal.clone().transformDirection(hit.object.matrixWorld) : new THREE.Vector3(0, 0, 1) };
             }
-            function setCamEl(el) {
-                el = Math.min(1.2, Math.max(-0.5, el)); window.__paintEl = el;
-                const R = window.__paintR || 6.84;
-                if (typeof lobbyCamera !== "undefined" && lobbyCamera) { lobbyCamera.position.set(0, 1.7 + R * Math.sin(el), R * Math.cos(el)); lobbyCamera.lookAt(0, 1.7, 0); }
+            function setCam() {
+                if (typeof lobbyCamera === "undefined" || !lobbyCamera) return;
+                const T = window.__paintT || (window.__paintT = { x: 0, y: 1.7, z: 0 });
+                const R = window.__paintR || 6.84, el = (window.__paintEl === undefined ? 0.1 : window.__paintEl), az = window.__paintAz || 0;
+                lobbyCamera.position.set(T.x + R * Math.cos(el) * Math.sin(az), T.y + R * Math.sin(el), T.z + R * Math.cos(el) * Math.cos(az));
+                lobbyCamera.lookAt(T.x, T.y, T.z);
             }
+            function setCamEl(el) { if (el !== undefined) window.__paintEl = Math.min(1.35, Math.max(-0.9, el)); setCam(); }
+            const getEl = () => (window.__paintEl === undefined ? 0.1 : window.__paintEl);
             const paintOpen = () => !screen.classList.contains("hidden");
+            let marker3d = null, hoverLabel = null;
+            function ensureMarker() {
+                if (marker3d || typeof lobbyScene === "undefined" || !lobbyScene) return;
+                marker3d = new THREE.Group();
+                const mat = (c) => new THREE.MeshBasicMaterial({ color: c, depthTest: false, transparent: true, opacity: 0.95, side: THREE.DoubleSide });
+                const ringW = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.0, 28), mat(0xffffff));
+                const ringB = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.12, 28), mat(0x000000));
+                const dot = new THREE.Mesh(new THREE.CircleGeometry(0.75, 20), mat(0xff3b30)); dot.name = "dot"; dot.material.opacity = 0.75;
+                [ringW, ringB, dot].forEach((m, i) => { m.renderOrder = 999 + i; marker3d.add(m); });
+                marker3d.visible = false; lobbyScene.add(marker3d);
+                hoverLabel = document.createElement("div");
+                hoverLabel.style.cssText = "position:fixed;z-index:80;pointer-events:none;padding:3px 8px;background:rgba(2,6,23,.88);border:1px solid #00f0ff;color:#fff;font-size:12px;font-weight:700;display:none;white-space:nowrap;";
+                document.body.appendChild(hoverLabel);
+            }
+            function updateHover3D(h, e) {
+                ensureMarker();
+                const prev = hoverPx, prevL = hoverLayer;
+                if (!h) { hoverPx = null; hoverLayer = null; if (marker3d) marker3d.visible = false; if (hoverLabel) hoverLabel.style.display = "none"; if (prev) { refresh(); if (gridOn && paintActive && prevL) live(prevL); } return; }
+                hoverPx = h.p; hoverLayer = h.layer;
+                if (gridOn && paintActive && (!prev || prev.x !== h.p.x || prev.y !== h.p.y || prevL !== h.layer)) { if (prevL && prevL !== h.layer) live(prevL); live(h.layer); }
+                if (marker3d) {
+                    marker3d.visible = !gridOn;
+                    marker3d.position.copy(h.pt).addScaledVector(h.nrm, 0.02);
+                    marker3d.lookAt(h.pt.clone().add(h.nrm));
+                    const r = 0.032 * Math.max(1, brush) + 0.012; marker3d.scale.set(r, r, r);
+                    const d = marker3d.getObjectByName("dot"); if (d) d.material.color.set(tool === "eraser" ? "#ffffff" : color);
+                }
+                if (hoverLabel) {
+                    const nm = (SKIN_PARTS.find(p => p[0] === h.layer) || [0, h.layer])[1];
+                    hoverLabel.innerText = nm + "  (" + h.p.x + ", " + h.p.y + ")";
+                    hoverLabel.style.display = "block"; hoverLabel.style.left = (e.clientX + 16) + "px"; hoverLabel.style.top = (e.clientY + 14) + "px";
+                }
+                if (hoverLayer === layer) refresh();
+            }
+            let rot3dAny = false;
+            const ptrs = new Map(); let pinching = false, pinchD0 = 1, pinchR0 = 6.84, pan3d = false;
+            const dist2 = () => { const a = Array.from(ptrs.values()); return a.length < 2 ? 0 : Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); };
+            function cancelStroke() {
+                if (!drawing) return;
+                drawing = false; drag3d = false;
+                const u = undoStack.pop();
+                if (changed && u) { paintCanvases[u.layer].getContext("2d").putImageData(u.data, 0, 0); refresh(); live(u.layer); }
+                changed = false;
+            }
+            function panBy(dx, dy) {
+                const T = window.__paintT; if (!T || typeof lobbyCamera === "undefined" || !lobbyCamera) return;
+                lobbyCamera.updateMatrixWorld(true);
+                const m = lobbyCamera.matrixWorld.elements, s = (window.__paintR || 6.84) * 0.9 / window.innerHeight;
+                T.x += (-m[0] * dx + m[4] * dy) * s; T.y += (-m[1] * dx + m[5] * dy) * s; T.z += (-m[2] * dx + m[6] * dy) * s;
+                T.y = Math.min(4.5, Math.max(-0.5, T.y)); setCam();
+            }
+            function zoomBy(f) { window.__paintR = Math.min(9, Math.max(0.5, (window.__paintR || 6.84) * f)); setCam(); }
+            function viewAll() { window.__paintT = { x: 0, y: 1.7, z: 0 }; window.__paintR = 6.84; window.__paintEl = 0.1; window.__paintAz = 0; setCam(); }
+            function focusPart(k) {
+                const bot = (typeof lobbyBotGroup !== "undefined") ? lobbyBotGroup : null; if (!bot) return;
+                bot.updateMatrixWorld(true);
+                const box = new THREE.Box3(); let any = false;
+                bot.traverse(o => { if (o.isMesh && o.userData.skinPart === k && isVisibleChain(o)) { box.expandByObject(o); any = true; } });
+                if (!any || box.isEmpty()) { setMsg("このパーツは今見えていません"); return; }
+                const c = box.getCenter(new THREE.Vector3()), sz = box.getSize(new THREE.Vector3());
+                window.__paintT = { x: c.x, y: c.y, z: c.z };
+                window.__paintR = Math.min(9, Math.max(1.0, Math.max(sz.x, sz.y, sz.z) * 1.9 + 0.5));
+                setCam();
+            }
+            function applyViewOffset() { // 左の操作パネル（スマホは下）に隠れないよう、キャラを空いている側へ寄せる
+                if (typeof lobbyCamera === "undefined" || !lobbyCamera) return;
+                const w = window.innerWidth, h = window.innerHeight;
+                if (!paintOpen()) { lobbyCamera.clearViewOffset(); return; }
+                if (w <= 900) lobbyCamera.setViewOffset(w, h, 0, h * 0.25, w, h);
+                else lobbyCamera.setViewOffset(w, h, -Math.min(520, w) / 2, 0, w, h);
+            }
+            window.addEventListener("resize", () => { if (paintOpen()) applyViewOffset(); });
+
             document.addEventListener("pointerdown", e => {
                 if (!paintOpen() || e.target.closest(".paint-panel")) return;
-                if (e.button === 2) { rot3d = true; rotX = e.clientX; rotY = e.clientY; e.preventDefault(); return; }
+                if (e.pointerType === "touch") {
+                    ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                    if (ptrs.size === 2) { cancelStroke(); rot3d = false; pan3d = false; pinching = true; pinchD0 = dist2() || 1; pinchR0 = window.__paintR || 6.84; e.preventDefault(); return; }
+                    if (ptrs.size > 2) return;
+                }
+                if (e.button === 1 || (e.button === 0 && e.shiftKey)) { pan3d = true; rotX = e.clientX; rotY = e.clientY; e.preventDefault(); return; }
+                if (e.button === 2 || (e.button === 0 && tool === "rotate")) { rot3d = true; rotX = e.clientX; rotY = e.clientY; e.preventDefault(); return; }
                 if (e.button !== 0) return;
                 const h = pick3D(e);
                 if (!h) { rot3d = true; rotX = e.clientX; rotY = e.clientY; return; } // 何もない所をドラッグで回転
@@ -5896,25 +6139,53 @@
             }, true);
             document.addEventListener("pointermove", e => {
                 if (!paintOpen()) return;
-                if (rot3d) { window.__paintRot = (window.__paintRot || 0) + (e.clientX - rotX) * 0.012; setCamEl((window.__paintEl || 0.1) + (e.clientY - rotY) * 0.006); rotX = e.clientX; rotY = e.clientY; return; }
+                if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (pinching) { const d = dist2(); if (d > 0) { window.__paintR = Math.min(9, Math.max(0.5, pinchR0 * pinchD0 / d)); setCam(); } return; }
+                if (pan3d) { panBy(e.clientX - rotX, e.clientY - rotY); rotX = e.clientX; rotY = e.clientY; return; }
+                if (rot3d) { window.__paintAz = (window.__paintAz || 0) - (e.clientX - rotX) * 0.012; setCamEl(getEl() + (e.clientY - rotY) * 0.006); rotX = e.clientX; rotY = e.clientY; return; }
                 const h = pick3D(e);
-                if (!e.target.closest(".paint-panel")) posEl.innerText = h ? ("3D " + h.layer + " X:" + h.p.x + " Y:" + h.p.y) : "";
+                const overPanel = !!e.target.closest(".paint-panel");
+                updateHover3D((overPanel || tool === "rotate") ? null : h, e);
+                if (!overPanel) posEl.innerText = h ? ("3D " + h.layer + " X:" + h.p.x + " Y:" + h.p.y) : "";
                 if (!drag3d || !h) return;
                 if (h.layer !== layer) { endStroke(); setLayer(h.layer); downAt(h.p); drag3d = drawing; lastKey = h.key; return; }
                 moveAt(h.p, h.key === lastKey); // 面をまたいだら線で結ばず1点だけ塗る
                 lastKey = h.key;
             }, true);
-            const end3d = () => { if (drag3d) { drag3d = false; endStroke(); } rot3d = false; };
+            const end3d = (e) => {
+                if (e && ptrs.has(e.pointerId)) { ptrs.delete(e.pointerId); if (ptrs.size < 2) pinching = false; }
+                if (drag3d) { drag3d = false; endStroke(); }
+                rot3d = false; pan3d = false;
+            };
             document.addEventListener("pointerup", end3d, true);
             document.addEventListener("pointercancel", end3d, true);
             document.addEventListener("wheel", e => {
                 if (!paintOpen() || typeof lobbyCamera === "undefined" || !lobbyCamera || e.target.closest(".paint-panel")) return;
-                window.__paintR = Math.min(9, Math.max(3.2, (window.__paintR || 6.84) + e.deltaY * 0.004)); setCamEl(window.__paintEl || 0.1);
+                if (e.deltaY < 0) { // カーソルの下の場所へ向かって寄る
+                    const h = pick3D(e), T = window.__paintT;
+                    if (h && T) { const k = 0.22; T.x += (h.pt.x - T.x) * k; T.y += (h.pt.y - T.y) * k; T.z += (h.pt.z - T.z) * k; }
+                }
+                zoomBy(Math.exp(e.deltaY * 0.0016));
             }, { passive: true });
-            document.getElementById("paintRotL").addEventListener("click", () => { window.__paintRot = (window.__paintRot || 0) - 0.5; });
-            document.getElementById("paintUp").addEventListener("click", () => setCamEl((window.__paintEl || 0.1) + 0.15));
-            document.getElementById("paintDown").addEventListener("click", () => setCamEl((window.__paintEl || 0.1) - 0.15));
-            document.getElementById("paintRotR").addEventListener("click", () => { window.__paintRot = (window.__paintRot || 0) + 0.5; });
+            document.getElementById("paintRotL").addEventListener("click", () => { window.__paintAz = (window.__paintAz || 0) + 0.5; setCam(); });
+            document.getElementById("paintUp").addEventListener("click", () => setCamEl(getEl() + 0.15));
+            document.getElementById("paintDown").addEventListener("click", () => setCamEl(getEl() - 0.15));
+            document.getElementById("paintRotR").addEventListener("click", () => { window.__paintAz = (window.__paintAz || 0) - 0.5; setCam(); });
+            document.getElementById("paintZoomIn").addEventListener("click", () => zoomBy(0.72));
+            document.getElementById("paintZoomOut").addEventListener("click", () => zoomBy(1 / 0.72));
+            document.getElementById("paintViewAll").addEventListener("click", viewAll);
+            document.getElementById("paintFocusPart").addEventListener("click", () => focusPart(layer));
+            document.getElementById("paintGridBtn").addEventListener("click", () => {
+                gridOn = !gridOn;
+                const b = document.getElementById("paintGridBtn");
+                b.classList.toggle("active", gridOn); b.innerText = gridOn ? "ピクセル枠 ON" : "ピクセル枠 OFF";
+                if (marker3d) marker3d.visible = false;
+                if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applyView(lobbyBotGroup);
+            });
+            document.querySelectorAll("#paint2dZoomRow [data-z]").forEach(b => b.addEventListener("click", () => {
+                cv.style.width = (+b.dataset.z * 100) + "%";
+                document.querySelectorAll("#paint2dZoomRow [data-z]").forEach(x => x.classList.toggle("active", x === b));
+            }));
 
             colorInput.addEventListener("input", () => setColor(colorInput.value));
             hexInput.addEventListener("change", () => {
@@ -5925,7 +6196,7 @@
             document.querySelectorAll("#paintToolRow [data-tool]").forEach(b => b.addEventListener("click", () => setTool(b.dataset.tool)));
             const partSel = document.getElementById("paintPartSel");
             SKIN_PARTS.forEach(p => { const o = document.createElement("option"); o.value = p[0]; o.textContent = p[1]; partSel.appendChild(o); });
-            partSel.addEventListener("change", () => setLayer(partSel.value));
+            partSel.addEventListener("change", () => { setLayer(partSel.value); focusPart(partSel.value); });
             document.getElementById("paintUndoBtn").addEventListener("click", undo);
             document.getElementById("paintResetLayerBtn").addEventListener("click", () => {
                 pushUndo();
@@ -5939,21 +6210,28 @@
                 try { localStorage.removeItem(STORAGE_KEY_SKIN); } catch (e) {}
                 mySkin = null;
                 refreshLobbySkin();
+                if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applyView(lobbyBotGroup);
                 setMsg("全て初期化しました");
             });
 
             function openPaint() {
                 screen.classList.remove("hidden");
                 setUIScreen("PAINT");
+                paintActive = true;
+                window.__paintRot = 0; window.__paintAz = 0; window.__paintR = 6.84; window.__paintEl = 0.1; window.__paintT = { x: 0, y: 1.7, z: 0 };
+                const lc = document.getElementById("lobbyCanvas"); if (lc) lc.style.touchAction = "none";
+                applyViewOffset(); setCam();
                 refresh();
-                window.__paintRot = 0; window.__paintR = 6.84; window.__paintEl = 0.1;
-                if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applySkinCanvases(lobbyBotGroup, mySkin ? paintCanvases : null);
+                if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applyView(lobbyBotGroup);
             }
             function closePaint() {
                 screen.classList.add("hidden");
-                drawing = false; drag3d = false; rot3d = false;
-                window.__paintRot = undefined;
-                if (typeof lobbyCamera !== "undefined" && lobbyCamera) { lobbyCamera.position.set(0, 2.4, 6.8); lobbyCamera.lookAt(0, 1.7, 0); }
+                drawing = false; drag3d = false; rot3d = false; pan3d = false; pinching = false; ptrs.clear(); updateHover3D(null);
+                paintActive = false;
+                window.__paintRot = undefined; window.__paintAz = 0;
+                const lc = document.getElementById("lobbyCanvas"); if (lc) lc.style.touchAction = "";
+                if (typeof lobbyCamera !== "undefined" && lobbyCamera) { lobbyCamera.clearViewOffset(); lobbyCamera.position.set(0, 2.4, 6.8); lobbyCamera.lookAt(0, 1.7, 0); }
+                if (typeof lobbyBotGroup !== "undefined" && lobbyBotGroup) applySkinCanvases(lobbyBotGroup, mySkin ? paintCanvases : null);
                 setUIScreen("MENU");
             }
             document.getElementById("openPaintBtn").addEventListener("click", openPaint);
@@ -8894,9 +9172,7 @@ ${shader.vertexShader}`.replace(
             if (crosshair) crosshair.style.opacity = "1.0";
             roundActive = false; currentAmmo = maxAmmo; isReloading = false; myShield = 100; myHp = 100; updateVitalsHud(); resetMedkit();
             isCrouching = false; currentCameraTargetHeight = 2.2 * CHAR_SCALE; currentContinuousShots = 0; hitPunchIntensity = 0.0;
-            playerInjuryState.legTimer = 0;
-            playerInjuryState.armTimer = 0;
-            updateInjuryHud();
+            resetInjuries();
             killcamState.active = false;
             killcamState.timer = 0;
             clearBotHitPartHighlight(enemyPlayerMesh);
@@ -8921,7 +9197,7 @@ ${shader.vertexShader}`.replace(
             const rStats = getWeaponStats();
             const gId = rStats.gadget.id;
             const slot2Label = slot2El.querySelectorAll("span")[1];
-            const labelMap = { wall: "WALL", hopper: "HOPPER", smoke: "SMOKE", sensor: "SENSOR", knife: "KNIFE", hound: "HOUND", frag: "FRAG" };
+            const labelMap = { wall: "WALL", hopper: "HOPPER", smoke: "SMOKE", sensor: "SENSOR", knife: "KNIFE", hound: "HOUND", bandage: "BANDAGE", frag: "FRAG" };
             if (slot2Label) slot2Label.innerText = labelMap[gId] || "FRAG";
             if (typeof updateMobileActionIcons === "function") updateMobileActionIcons();
 
@@ -9128,6 +9404,7 @@ ${shader.vertexShader}`.replace(
                     }
                     return;
                 }
+                if (gId === "bandage") { startBandage(); return; }
                 if (myGrenadesLeft <= 0) return;
                 if (gId === "knife") {
                     switchSlot(2);
@@ -9211,6 +9488,8 @@ ${shader.vertexShader}`.replace(
                             if (!isReloading && (myGrenadesLeft > 0 || stagedHoundCubes.length > 0)) {
                                 beginHoundCharge("LEFT");
                             }
+                        } else if (gId === "bandage") {
+                            startBandage();
                         } else if (myGrenadesLeft > 0) {
                             isCookingGrenade = true;
                         }
@@ -9231,6 +9510,7 @@ ${shader.vertexShader}`.replace(
                             }
                             return;
                         }
+                        if (gId === "bandage") { startBandage(); return; }
                         if (myGrenadesLeft > 0 && !isReloading) {
                             isCookingGrenade = true;
                             isShooting = false;
@@ -9342,6 +9622,7 @@ ${shader.vertexShader}`.replace(
                 if (handSmokeGroup) handSmokeGroup.visible = (gId === "smoke" && myGrenadesLeft > 0);
                 if (handSensorGroup) handSensorGroup.visible = (gId === "sensor" && myGrenadesLeft > 0);
                 if (handKnifeGroup) handKnifeGroup.visible = (gId === "knife");
+                if (gId === "bandage") weaponGroup.visible = true;
                 ammoPanel.style.opacity = "0.35";
                 isShooting = false;
             }
@@ -10797,6 +11078,17 @@ function releaseHoundTrigger() {
         }
 
         const playerInjuryState = { legTimer: 0, armTimer: 0 };
+        const BREAK_PERM = 1e9, BREAK_DMG = 30; // 脚/腕に累計30ダメージで部位破壊（ラウンド終了まで継続）
+        const partDmgAcc = { LEG: 0, ARM: 0 };
+        let enemyBrk = 0; // 相手の破損フラグ (1=脚, 2=腕)
+        const fmtInj = (t) => t > 1e6 ? "破損中" : t.toFixed(1) + "s";
+        function myBrkFlags() { return (playerInjuryState.legTimer > 1e6 ? 1 : 0) | (playerInjuryState.armTimer > 1e6 ? 2 : 0); }
+        function resetInjuries() {
+            playerInjuryState.legTimer = 0; playerInjuryState.armTimer = 0;
+            partDmgAcc.LEG = 0; partDmgAcc.ARM = 0; enemyBrk = 0;
+            if (typeof cancelBandage === "function") cancelBandage();
+            updateInjuryHud();
+        }
         let lastEnemyHitBodyPart = "CHEST";
         let lastEnemyHitLocalPos = null;
         let lastMyHitBodyPart = "CHEST";
@@ -10811,15 +11103,113 @@ function releaseHoundTrigger() {
             bodyPart: "CHEST"
         };
 
+
+        // ===== 包帯（サブウェポン）: HP+20 / 使用3秒 / 部位破壊を修復 =====
+        let bandageUse = null;
+        const BANDAGE_TIME = 3.0, BANDAGE_HEAL = 20;
+        function bandageBar() {
+            let el = document.getElementById("bandage-bar");
+            if (!el) {
+                el = document.createElement("div"); el.id = "bandage-bar";
+                el.style.cssText = "position:fixed;left:50%;bottom:24%;transform:translateX(-50%);width:240px;z-index:30;display:none;font-family:'Chakra Petch',sans-serif;color:#fff;font-size:13px;font-weight:700;text-align:center;pointer-events:none;text-shadow:0 1px 3px #000;";
+                el.innerHTML = '<div id="bandage-bar-txt">🩹 包帯 使用中…</div><div style="height:8px;background:rgba(0,0,0,.6);border:1px solid #34d399;margin-top:4px;"><div id="bandage-bar-fill" style="height:100%;width:0;background:#34d399;"></div></div>';
+                document.body.appendChild(el);
+            }
+            return el;
+        }
+        function bandageMsg(t, ms) { const el = bandageBar(); el.style.display = "block"; document.getElementById("bandage-bar-txt").innerText = t; document.getElementById("bandage-bar-fill").style.width = "0"; setTimeout(() => { if (!bandageUse) el.style.display = "none"; }, ms || 1200); }
+        function startBandage() {
+            if (!roundActive || bandageUse || isReloading || myHp <= 0) return;
+            if (myGrenadesLeft <= 0) { bandageMsg("包帯がありません", 900); return; }
+            if (myHp >= 100 && playerInjuryState.legTimer <= 0 && playerInjuryState.armTimer <= 0) { bandageMsg("回復の必要はありません", 900); return; }
+            isShooting = false; isCookingGrenade = false;
+            bandageUse = { t: 0 };
+            bandageBar().style.display = "block";
+            document.getElementById("bandage-bar-txt").innerText = "🩹 包帯 使用中…（射撃・リロードで中断）";
+        }
+        function cancelBandage() {
+            bandageUse = null;
+            const el = document.getElementById("bandage-bar"); if (el) el.style.display = "none";
+        }
+        function finishBandage() {
+            cancelBandage();
+            myGrenadesLeft = Math.max(0, myGrenadesLeft - 1); grenadeCountEl.innerText = myGrenadesLeft;
+            myHp = Math.min(100, myHp + BANDAGE_HEAL);
+            const repaired = playerInjuryState.legTimer > 1e6 || playerInjuryState.armTimer > 1e6;
+            playerInjuryState.legTimer = 0; playerInjuryState.armTimer = 0; partDmgAcc.LEG = 0; partDmgAcc.ARM = 0;
+            updateVitalsHud(); updateInjuryHud(); sendGameSync(true);
+            playSynthSound("reload");
+            bandageMsg(repaired ? "HP+20 / 破損部位を修復！" : "HP+20 回復！", 1400);
+        }
+        function updateBandage(dt) {
+            if (!bandageUse) return;
+            if (!roundActive || myHp <= 0 || isShooting || isReloading || isCookingGrenade) { cancelBandage(); return; }
+            bandageUse.t += dt;
+            const f = document.getElementById("bandage-bar-fill"); if (f) f.style.width = Math.min(100, bandageUse.t / BANDAGE_TIME * 100) + "%";
+            if (bandageUse.t >= BANDAGE_TIME) finishBandage();
+        }
+
+        // ===== 部位破壊の煙（自分: 画面 / 相手: 3Dモデルから） =====
+        function showBreakToast(part) {
+            const el = bandageBar(); el.style.display = "block";
+            document.getElementById("bandage-bar-txt").innerText = (part === "LEG" ? "⚠ 脚が破壊された！" : "⚠ 腕が破壊された！") + "（包帯で修復）";
+            document.getElementById("bandage-bar-fill").style.width = "0";
+            setTimeout(() => { if (!bandageUse) el.style.display = "none"; }, 1800);
+        }
+        (function initOwnSmoke() {
+            const st = document.createElement("style");
+            st.textContent = "@keyframes brkPuff{0%{opacity:.0;transform:translateY(0) scale(.5)}20%{opacity:.7}100%{opacity:0;transform:translateY(-140px) scale(1.8)}} .brk-puff{position:fixed;z-index:14;pointer-events:none;border-radius:50%;background:radial-gradient(circle,rgba(150,155,165,.85),rgba(70,75,85,.0) 70%);filter:blur(4px);animation:brkPuff 1.6s ease-out forwards;}";
+            document.head.appendChild(st);
+            setInterval(() => {
+                if (typeof currentUIScreen === "undefined" || currentUIScreen !== "GAME" || !roundActive) return;
+                const f = myBrkFlags(); if (!f) return;
+                const mk = (x, y) => { const d = document.createElement("div"); d.className = "brk-puff"; const sz = 50 + Math.random() * 60; d.style.cssText = `left:${x - sz / 2}px;top:${y - sz / 2}px;width:${sz}px;height:${sz}px;`; document.body.appendChild(d); setTimeout(() => d.remove(), 1700); };
+                const W = window.innerWidth, H = window.innerHeight;
+                if (f & 1) mk(W * (0.35 + Math.random() * 0.3), H - 20);
+                if (f & 2) mk(W * (0.68 + Math.random() * 0.2), H - 60);
+            }, 160);
+        })();
+        const brkSprites = []; let brkTex = null, brkAcc = 0;
+        function updateBrokenSmoke(dt) {
+            if (typeof scene === "undefined" || !scene) return;
+            if (enemyBrk && enemyPlayerMesh && enemyPlayerMesh.visible && !isTrainingMode && brkSprites.length < 70) {
+                if (!brkTex) {
+                    const c = document.createElement("canvas"); c.width = c.height = 64; const x = c.getContext("2d");
+                    const g = x.createRadialGradient(32, 32, 2, 32, 32, 30); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(1, "rgba(255,255,255,0)");
+                    x.fillStyle = g; x.fillRect(0, 0, 64, 64); brkTex = new THREE.CanvasTexture(c);
+                }
+                brkAcc += dt;
+                while (brkAcc > 0.09) {
+                    brkAcc -= 0.09;
+                    enemyPlayerMesh.updateMatrixWorld(true);
+                    const spots = [];
+                    if (enemyBrk & 1) spots.push([(Math.random() - 0.5) * 0.5, 0.9, 0]);
+                    if (enemyBrk & 2) spots.push([(Math.random() < 0.5 ? -0.88 : 0.88), 2.4, -0.25]);
+                    spots.forEach(p => {
+                        const m = new THREE.SpriteMaterial({ map: brkTex, color: 0x5b6270, transparent: true, opacity: 0.7, depthWrite: false });
+                        const sp = new THREE.Sprite(m); sp.position.copy(enemyPlayerMesh.localToWorld(new THREE.Vector3(p[0], p[1], p[2])));
+                        sp.scale.set(0.5, 0.5, 0.5); sp.userData = { life: 0, vx: (Math.random() - 0.5) * 0.3, vz: (Math.random() - 0.5) * 0.3 };
+                        scene.add(sp); brkSprites.push(sp);
+                    });
+                }
+            }
+            for (let i = brkSprites.length - 1; i >= 0; i--) {
+                const sp = brkSprites[i], u = sp.userData; u.life += dt;
+                sp.position.x += u.vx * dt; sp.position.z += u.vz * dt; sp.position.y += 1.0 * dt;
+                const k = u.life / 1.5; sp.scale.setScalar(0.5 + k * 1.3); sp.material.opacity = Math.max(0, 0.7 * (1 - k));
+                if (u.life >= 1.5) { scene.remove(sp); sp.material.dispose(); brkSprites.splice(i, 1); }
+            }
+        }
+
         function updateInjuryHud() {
             const box = document.getElementById("injury-status-hud");
             if (!box) return;
             let html = "";
             if (playerInjuryState.legTimer > 0) {
-                html += `<div class="injury-badge"><span>⚠ LEG INJURED // 移動・跳躍低下</span><span>${playerInjuryState.legTimer.toFixed(1)}s</span></div>`;
+                html += `<div class="injury-badge"><span>⚠ LEG ${playerInjuryState.legTimer > 1e6 ? "BROKEN" : "INJURED"} // 移動・跳躍低下</span><span>${fmtInj(playerInjuryState.legTimer)}</span></div>`;
             }
             if (playerInjuryState.armTimer > 0) {
-                html += `<div class="injury-badge arm"><span>⚠ ARM INJURED // 反動増・リロード遅延</span><span>${playerInjuryState.armTimer.toFixed(1)}s</span></div>`;
+                html += `<div class="injury-badge arm"><span>⚠ ARM ${playerInjuryState.armTimer > 1e6 ? "BROKEN" : "INJURED"} // 反動増・リロード遅延</span><span>${fmtInj(playerInjuryState.armTimer)}</span></div>`;
             }
             box.innerHTML = html;
         }
@@ -11366,12 +11756,17 @@ const intersects = raycaster.intersectObjects(shootableTargets, true);
             }
 
             // 部位被弾デバフ（脚被弾で移動・ジャンプ低下 / 腕被弾で反動増加・リロード遅延）
-            if (lastMyHitBodyPart === "LEG") {
-                playerInjuryState.legTimer = 4.2;
+            if (lastMyHitBodyPart === "LEG" || lastMyHitBodyPart === "ARM") {
+                const pk = lastMyHitBodyPart, tk = pk === "LEG" ? "legTimer" : "armTimer";
+                partDmgAcc[pk] += amount;
+                if (partDmgAcc[pk] >= BREAK_DMG) {
+                    if (playerInjuryState[tk] < 1e6) showBreakToast(pk);
+                    playerInjuryState[tk] = BREAK_PERM;
+                } else {
+                    playerInjuryState[tk] = Math.max(playerInjuryState[tk], 4.2);
+                }
                 updateInjuryHud();
-            } else if (lastMyHitBodyPart === "ARM") {
-                playerInjuryState.armTimer = 4.2;
-                updateInjuryHud();
+                sendGameSync(true);
             }
 
             hitPunchIntensity = 0.22 * getWeaponStats().hitPunchMult;
@@ -11759,6 +12154,8 @@ const intersects = raycaster.intersectObjects(shootableTargets, true);
             const timeScale = (isRoundEnding && killcamState.active) ? 0.24 : 1.0;
             const delta = rawDelta * timeScale;
             updateEnemyInterpolation(rawDelta);
+            updateBandage(delta);
+            updateBrokenSmoke(rawDelta);
 
             if (playerInjuryState.legTimer > 0 || playerInjuryState.armTimer > 0) {
                 playerInjuryState.legTimer = Math.max(0, playerInjuryState.legTimer - delta);
@@ -11783,7 +12180,7 @@ const intersects = raycaster.intersectObjects(shootableTargets, true);
             const ammoSpentRatio = (maxAmmo > 0) ? Math.max(0, Math.min(1, (maxAmmo - currentAmmo) / maxAmmo)) : 0;
             const ammoLightnessBonus = 1.0 + ammoSpentRatio * 0.11;
             const knifeSpeedBonus = (currentSlot === 2 && frameWStats.gadget.id === "knife") ? 1.15 : 1.0;
-            const legSpeedDebuff = (playerInjuryState.legTimer > 0) ? 0.70 : 1.0;
+            const legSpeedDebuff = ((playerInjuryState.legTimer > 0) ? 0.70 : 1.0) * (bandageUse ? 0.6 : 1.0);
             let speedModifier = (isCrouching ? 65.0 : 180.0) * frameWStats.mobilityMult * ammoLightnessBonus * knifeSpeedBonus * legSpeedDebuff;
 
             velocity.x -= velocity.x * 12.0 * delta; velocity.z -= velocity.z * 12.0 * delta; velocity.y -= 9.8 * 15.0 * delta;
@@ -12372,9 +12769,7 @@ const intersects = raycaster.intersectObjects(shootableTargets, true);
             if (dmgDir) dmgDir.innerHTML = "";
             const slideVig = document.getElementById("slide-vignette");
             if (slideVig) slideVig.classList.remove("active");
-            playerInjuryState.legTimer = 0;
-            playerInjuryState.armTimer = 0;
-            updateInjuryHud();
+            resetInjuries();
             killcamState.active = false;
             killcamState.timer = 0;
             clearInterval(rInterval);
